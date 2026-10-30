@@ -14,7 +14,6 @@ import {
 } from "@ant-design/icons";
 import {Dropdown} from "antd";
 import {MoonOutlined, SunOutlined} from "@ant-design/icons";
-import {useStore} from "../data/hooks";
 import {useTheme} from "../theme/useTheme";
 import {UserAvatar} from "./ui";
 
@@ -36,8 +35,8 @@ function titleOf(pathname: string): string {
 }
 
 function TopNav({onNavigate}: {onNavigate?: () => void}) {
-  const {state} = useStore();
-  const pending = state.comments.filter((c) => c.status === "pending").length;
+  // 待审核评论数（组件自身状态，接入接口后在 useEffect 中拉取）
+  const [pending] = useState(0);
 
   return (
     <nav className="flex flex-1 items-center gap-1 px-6 max-md:px-3">
@@ -74,13 +73,14 @@ function TopNav({onNavigate}: {onNavigate?: () => void}) {
 }
 
 export default function Layout({onLogout}: {onLogout: () => void}) {
-  const {state} = useStore();
   const {mode, toggle} = useTheme();
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
   const title = titleOf(location.pathname);
   const dark = mode === "dark";
-  const user = state.settings.username?.trim() || "DAVAID";
+  // 当前登录站长（组件自身状态，接入接口后在 useEffect 中拉取）
+  const [user] = useState("DAVAID");
+  const [avatar] = useState<string | undefined>(undefined);
 
   const userMenu = {
     items: [
@@ -146,7 +146,7 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
             </button>
             <Dropdown menu={userMenu} placement="bottomRight" trigger={["click"]}>
               <button className="flex cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-raised">
-                <UserAvatar name={user} src={state.settings.avatar} size={28} />
+                <UserAvatar name={user} src={avatar} size={28} />
                 <span className="hidden max-w-32 truncate text-[13px] text-cream md:block">{user}</span>
               </button>
             </Dropdown>
@@ -181,9 +181,9 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
         <Outlet />
       </main>
 
-      <footer className="py-5 text-center text-[12px] text-ash">
-        {state.settings.siteTitle} · Console — 不做流量，不求更新，只求把日子留下一点痕迹
-      </footer>
+        <footer className="py-5 text-center text-[12px] text-ash">
+          DAVAID BLOG · Console — 不做流量，不求更新，只求把日子留下一点痕迹
+        </footer>
     </div>
   );
 }

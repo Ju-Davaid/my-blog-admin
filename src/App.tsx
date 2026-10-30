@@ -2,7 +2,6 @@ import { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import { AntdProvider } from "./components/antd";
-import { StoreProvider } from "./data/store";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -30,24 +29,22 @@ export default function App() {
   return (
     <ThemeProvider>
       <AntdProvider>
-        <StoreProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<Layout onLogout={() => setAuthed(false)} />}>
-                <Route index element={<Dashboard />} />
-                <Route path="/posts" element={<Posts />} />
-                <Route path="/posts/new" element={<PostEditor />} />
-                <Route path="/posts/:id" element={<PostEditor />} />
-                <Route path="/taxonomy" element={<Taxonomy />} />
-                <Route path="/photos" element={<Photos />} />
-                <Route path="/comments" element={<Comments />} />
-                <Route path="/moments" element={<Moments />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </StoreProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout onLogout={() => setAuthed(false)} />}>
+              <Route index element={<Dashboard />} />
+              <Route path="/posts" element={<Posts />} />
+              <Route path="/posts/new" element={<PostEditor />} />
+              <Route path="/posts/:id" element={<PostEditor />} />
+              <Route path="/taxonomy" element={<Taxonomy />} />
+              <Route path="/photos" element={<Photos />} />
+              <Route path="/comments" element={<Comments />} />
+              <Route path="/moments" element={<Moments />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </AntdProvider>
     </ThemeProvider>
   );

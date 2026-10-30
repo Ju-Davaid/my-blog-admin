@@ -13,10 +13,11 @@ import {
   Field,
   IconButton,
   TextArea,
-} from "../components/ui";
-import { useStore } from "../data/hooks";
-import { useTheme } from "../theme/useTheme";
-import type { Post, PostStatus } from "../types";
+} from "@/components/ui";
+import { useTheme } from "@/theme/useTheme";
+import { seedState } from "@/data/seed";
+import type { Category, Post, PostStatus, Tag } from "@/types";
+import { uploadFile } from "@/api";
 
 function blankPost(): Omit<
   Post,
@@ -26,17 +27,21 @@ function blankPost(): Omit<
     title: "",
     desc: "",
     content: "",
-    categoryId: "cat-code",
+    categoryId: null,
     tagIds: [],
     status: "draft",
-    cover: undefined,
+    cover: "",
   };
 }
 
 function EditorForm({ existing }: { existing: Post | null }) {
-  const { state, savePost, deletePost } = useStore();
   const { mode } = useTheme();
   const navigate = useNavigate();
+
+  /* 组件自身状态：分类 / 标签接真实数据时换成接口拉取 */
+  const [categories] = useState<Category[]>(seedState.categories);
+  const [tags] = useState<Tag[]>(seedState.tags);
+
   const [form, setForm] = useState(() => ({
     ...blankPost(),
     ...(existing
@@ -86,23 +91,38 @@ function EditorForm({ existing }: { existing: Post | null }) {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    savePost(post);
+    console.log("保存文章", post);
   };
 
-  const onUploadImg = (files: Array<File>, callBack: UploadImgCallBack) => {
-    console.log("上传图片", files);
-    // 模拟上传图片
-    setTimeout(() => {
-      const url = URL.createObjectURL(files[0]);
-      callBack([{ url, alt: "", title: "" }]);
-    }, 1000);
+  // 上传图片
+  const onUploadImg = async (
+    files: Array<File>,
+    callBack: UploadImgCallBack,
+  ) => {
+    const urls = await Promise.all(
+      files.map(async (file) => {
+        const result: any = await uploadFile(file);
+        const data = result.data as { url: string };
+        if (
+          typeof data !== "object" ||
+          data === null ||
+          !("url" in data) ||
+          typeof data.url !== "string" ||
+          !data.url
+        ) {
+          throw new Error("文件上传接口未返回有效的 url");
+        }
+        return data.url;
+      }),
+    );
+    callBack(urls);
   };
-  const toggleTag = (id: string) =>
+  const toggleTag = (id: number) =>
     set(
       "tagIds",
-      form.tagIds.includes(id)
+      form.tagIds?.includes(id)
         ? form.tagIds.filter((t) => t !== id)
-        : [...form.tagIds, id],
+        : [...(form.tagIds ?? []), id],
     );
 
   const pickCover = (files: FileList | null) => {
@@ -114,7 +134,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
 
   const clearCover = () => {
     if (form.cover) URL.revokeObjectURL(form.cover);
-    set("cover", undefined);
+    set("cover", "");
   };
 
   return (
@@ -239,7 +259,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
                 <Select
                   value={form.categoryId}
                   onChange={(v) => set("categoryId", v)}
-                  options={state.categories.map((c) => ({
+                  options={categories.map((c) => ({
                     value: c.id,
                     label: c.name,
                   }))}
@@ -253,8 +273,8 @@ function EditorForm({ existing }: { existing: Post | null }) {
           <Card className="reveal reveal-3 p-4">
             <Field label="标签" hint="点击切换，已选高亮">
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {state.tags.map((t) => {
-                  const on = form.tagIds.includes(t.id);
+                {tags.map((t) => {
+                  const on = form?.tagIds?.includes(t.id);
                   return (
                     <button
                       key={t.id}
@@ -272,11 +292,11 @@ function EditorForm({ existing }: { existing: Post | null }) {
                 })}
               </div>
             </Field>
-            {form.tagIds.length > 0 && (
+            {form.tagIds && form.tagIds?.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1 border-t border-dashed border-line pt-3">
                 {form.tagIds.map((id) => (
                   <Badge key={id} tone="ember">
-                    {state.tags.find((t) => t.id === id)?.name}
+                    {tags.find((t) => t.id === id)?.name}
                   </Badge>
                 ))}
               </div>
@@ -351,10 +371,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
         body={`确定删除《${existing?.title}》吗？相关评论会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setConfirmDelete(false)}
-        onConfirm={() => {
-          if (existing) deletePost(existing.id);
-          navigate("/posts");
-        }}
+        onConfirm={() => navigate("/posts")}
       />
     </div>
   );
@@ -362,8 +379,8 @@ function EditorForm({ existing }: { existing: Post | null }) {
 
 export default function PostEditor() {
   const { id } = useParams();
-  const { state } = useStore();
-  const existing = id ? (state.posts.find((p) => p.id === id) ?? null) : null;
+
+  const existing = null;
 
   if (id && !existing) {
     return (

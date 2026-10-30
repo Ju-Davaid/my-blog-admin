@@ -72,8 +72,14 @@ export function Field({label, children, hint}: {label: string; children: ReactNo
   );
 }
 
-export function TextInput({className = "", ...rest}: InputHTMLAttributes<HTMLInputElement>) {
-  return <Input {...(rest as object)} className={className} />;
+export function TextInput({
+  className = "",
+  prefix,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "prefix"> & {
+  prefix?: ReactNode;
+}) {
+  return <Input prefix={prefix} {...(rest as object)} className={className} />;
 }
 
 export function TextArea({className = "", ...rest}: TextareaHTMLAttributes<HTMLTextAreaElement>) {

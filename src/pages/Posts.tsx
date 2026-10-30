@@ -3,17 +3,25 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input, Pagination, Select, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { App } from "antd";
 import { Button, Card, ConfirmDialog, EmptyState } from "../components/ui";
-import { useStore } from "../data/hooks";
+import { seedState } from "../data/seed";
 import { formatNumber, timeAgo } from "../utils/format";
-import type { Post } from "../types";
+import type { Category, CommentItem, Post, Tag as TagItem } from "../types";
 import DefaultCover from "../assets/images/default-cover.jpg";
 
 type StatusFilter = "all" | "published" | "draft";
 
 export default function Posts() {
-  const { state, deletePost } = useStore();
+  const { message } = App.useApp();
   const navigate = useNavigate();
+
+  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [comments] = useState<CommentItem[]>([]);
+  const [categories] = useState<Category[]>(seedState.categories);
+  const [tags] = useState<TagItem[]>(seedState.tags);
+
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -24,15 +32,15 @@ export default function Posts() {
 
   const commentCount = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const c of state.comments) {
+    for (const c of comments) {
       if (c.status !== "spam") map[c.postId] = (map[c.postId] ?? 0) + 1;
     }
     return map;
-  }, [state.comments]);
+  }, [comments]);
 
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase();
-    return state.posts
+    return posts
       .filter((p) => (status === "all" ? true : p.status === status))
       .filter((p) => (cat === "all" ? true : p.categoryId === cat))
       .filter((p) =>
@@ -46,9 +54,9 @@ export default function Posts() {
           ? b.views - a.views
           : b.updatedAt.localeCompare(a.updatedAt),
       );
-  }, [state.posts, q, cat, status, sort]);
+  }, [posts, q, cat, status, sort]);
 
-  const tagName = (id: string) => state.tags.find((t) => t.id === id)?.name;
+  const tagName = (id: number) => tags.find((t) => t.id === id)?.name;
 
   /* 分页：筛选/排序变化时回到第 1 页 */
   const resetPage = () => setPage(1);
@@ -99,8 +107,7 @@ export default function Posts() {
       width: 100,
       render: (_, p) => (
         <Tag variant="filled" color="#8f959e" style={{ margin: 0 }}>
-          {state.categories.find((c) => c.id === p.categoryId)?.name ??
-            "未分类"}
+          {categories.find((c) => c.id === p.categoryId)?.name ?? "未分类"}
         </Tag>
       ),
     },
@@ -196,8 +203,8 @@ export default function Posts() {
             共{" "}
             <span className="tnum font-medium text-fog">{filtered.length}</span>{" "}
             篇
-            {filtered.length !== state.posts.length && (
-              <span className="ml-1 text-ash">/ 全部 {state.posts.length}</span>
+            {filtered.length !== posts.length && (
+              <span className="ml-1 text-ash">/ 全部 {posts.length}</span>
             )}
           </span>
         </div>
@@ -229,7 +236,7 @@ export default function Posts() {
           style={{ width: 144 }}
           options={[
             { value: "all", label: "全部分类" },
-            ...state.categories.map((c) => ({ value: c.id, label: c.name })),
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
           ]}
         />
         <Select
@@ -314,11 +321,14 @@ export default function Posts() {
       <ConfirmDialog
         open={toDelete !== null}
         title="删除文章"
-        body={`确定删除《${state.posts.find((p) => p.id === toDelete)?.title ?? ""}》吗？相关评论会一并删除，此操作不可撤销。`}
+        body={`确定删除《${posts.find((p) => p.id === toDelete)?.title ?? ""}》吗？相关评论会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setToDelete(null)}
         onConfirm={() => {
-          if (toDelete) deletePost(toDelete);
+          if (toDelete) {
+            setPosts((prev) => prev.filter((p) => p.id !== toDelete));
+            message.success("文章已删除");
+          }
           setToDelete(null);
         }}
       />

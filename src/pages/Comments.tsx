@@ -1,9 +1,10 @@
 import { Check, CornerDownRight, MessageSquare, RotateCcw, Send, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { App } from "antd";
 import { Button, Card, ConfirmDialog, EmptyState, IconButton, TextInput } from "../components/ui";
-import { useStore } from "../data/hooks";
-import type { CommentItem, CommentStatus } from "../types";
+import { seedState } from "../data/seed";
+import type { CommentItem, CommentStatus, Post } from "../types";
 import { timeAgo } from "../utils/format";
 
 const TABS: { key: CommentStatus; label: string }[] = [
@@ -34,7 +35,13 @@ function AdminBadge() {
 }
 
 export default function Comments() {
-  const { state, setCommentStatus, deleteComment, addComment } = useStore();
+  const { message } = App.useApp();
+
+  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [posts] = useState<Post[]>([]);
+  const [adminName] = useState(seedState.settings.username || "DAVAID");
+
   const [tab, setTab] = useState<CommentStatus>("pending");
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -42,11 +49,11 @@ export default function Comments() {
 
   /* 回复按 parentId 归到父评论下，孤立回复（父评论已不存在）提升为顶层 */
   const { counts, threads } = useMemo(() => {
-    const ids = new Set(state.comments.map((c) => c.id));
+    const ids = new Set(comments.map((c) => c.id));
     const repliesByParent = new Map<string, CommentItem[]>();
     const c: Record<string, number> = { pending: 0, approved: 0, spam: 0 };
 
-    for (const cm of state.comments) {
+    for (const cm of comments) {
       if (cm.parentId && ids.has(cm.parentId)) {
         const arr = repliesByParent.get(cm.parentId);
         if (arr) arr.push(cm);
@@ -61,7 +68,7 @@ export default function Comments() {
       arr.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     }
 
-    const roots = state.comments.filter(
+    const roots = comments.filter(
       (cm) => (!cm.parentId || !ids.has(cm.parentId)) && cm.status === tab,
     );
 
@@ -69,23 +76,50 @@ export default function Comments() {
       counts: c,
       threads: roots.map((root) => ({ root, replies: repliesByParent.get(root.id) ?? [] })),
     };
-  }, [state.comments, tab]);
+  }, [comments, tab]);
 
-  const postTitle = (id: string) => state.posts.find((p) => p.id === id)?.title ?? "（文章已删除）";
+  const postTitle = (id: string) => posts.find((p) => p.id === id)?.title ?? "（文章已删除）";
 
-  const adminName = state.settings.username?.trim() || "DAVAID";
+  const setCommentStatus = (id: string, status: CommentStatus) => {
+    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    message.success(status === "approved" ? "已通过" : "已移入垃圾");
+  };
+
+  /* 级联删除：连同挂在它下面的所有回复 */
+  const deleteComment = (id: string) => {
+    setComments((prev) => {
+      const doomed = new Set<string>([id]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const c of prev) {
+          if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
+            doomed.add(c.id);
+            grew = true;
+          }
+        }
+      }
+      return prev.filter((c) => !doomed.has(c.id));
+    });
+    message.success("评论已删除");
+  };
 
   const submitReply = (parent: CommentItem) => {
     const text = replyText.trim();
     if (!text) return;
-    addComment({
-      postId: parent.postId,
-      author: adminName,
-      content: text,
-      status: "approved",
-      isAdmin: true,
-      parentId: parent.id,
-    });
+    setComments((prev) => [
+      ...prev,
+      {
+        id: `cm-${Date.now().toString(36)}`,
+        postId: parent.postId,
+        author: adminName,
+        content: text,
+        status: "approved",
+        isAdmin: true,
+        parentId: parent.id,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
     setReplyText("");
     setReplyTo(null);
   };
@@ -144,7 +178,7 @@ export default function Comments() {
                       <span className="text-[11px] text-ash">{timeAgo(root.createdAt)}</span>
                       <span className="text-[11px] text-ash">·</span>
                       <Link
-                        to={state.posts.some((p) => p.id === root.postId) ? `/posts/${root.postId}` : "/posts"}
+                        to={posts.some((p) => p.id === root.postId) ? `/posts/${root.postId}` : "/posts"}
                         className="link-sweep truncate text-[12px] text-fog hover:text-ember"
                       >
                         《{postTitle(root.postId)}》

@@ -18,7 +18,8 @@ import {
   EmptyState,
   StatusDot,
 } from "../components/ui";
-import { useStore } from "../data/hooks";
+import { seedState } from "../data/seed";
+import type { CommentItem, Post, TrafficPoint } from "../types";
 import { formatNumber, timeAgo } from "../utils/format";
 
 /* 数字滚动 */
@@ -82,28 +83,39 @@ function StatCard({
 }
 
 export default function Dashboard() {
-  const { state, setCommentStatus } = useStore();
   const navigate = useNavigate();
 
-  const published = state.posts.filter((p) => p.status === "published");
-  const drafts = state.posts.filter((p) => p.status === "draft");
-  const pendingComments = state.comments.filter((c) => c.status === "pending");
-  const totalViews = state.posts.reduce((s, p) => s + p.views, 0);
+  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
+  const [posts] = useState<Post[]>([]);
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [photos] = useState(seedState.photos);
+  const [albums] = useState(seedState.albums);
+  const [categories] = useState(seedState.categories);
+  const [traffic] = useState<TrafficPoint[]>([]);
+  const [username] = useState(seedState.settings.username || "DAVAID");
+
+  const published = posts.filter((p) => p.status === "published");
+  const drafts = posts.filter((p) => p.status === "draft");
+  const pendingComments = comments.filter((c) => c.status === "pending");
+  const totalViews = posts.reduce((s, p) => s + p.views, 0);
 
   const recentPosts = useMemo(
     () =>
-      [...state.posts]
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .slice(0, 5),
-    [state.posts],
+      [...posts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5),
+    [posts],
   );
 
   const commentPostTitle = (postId: string) =>
-    state.posts.find((p) => p.id === postId)?.title ?? "（文章已删除）";
+    posts.find((p) => p.id === postId)?.title ?? "（文章已删除）";
 
-  const last7 = useMemo(() => state.traffic.slice(-7), [state.traffic]);
+  const setCommentStatus = (id: string, status: CommentItem["status"]) =>
+    setComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status } : c)),
+    );
+
+  const last7 = useMemo(() => traffic.slice(-7), [traffic]);
   const pv7 = last7.reduce((s, d) => s + d.pv, 0);
-  const pvPrev = state.traffic.slice(-14, -7).reduce((s, d) => s + d.pv, 0);
+  const pvPrev = traffic.slice(-14, -7).reduce((s, d) => s + d.pv, 0);
   const delta = pvPrev > 0 ? Math.round(((pv7 - pvPrev) / pvPrev) * 100) : 0;
 
   return (
@@ -117,7 +129,7 @@ export default function Dashboard() {
               : new Date().getHours() < 18
                 ? "Good Afternoon"
                 : "Good Evening"}
-            , {state.settings.username?.trim() || "DAVAID"}
+            , {username}
           </p>
           <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
             今天也留下一点痕迹<span className="text-ember">。</span>
@@ -133,7 +145,7 @@ export default function Dashboard() {
         <StatCard
           label="文章"
           en="Posts"
-          value={state.posts.length}
+          value={posts.length}
           sub={`已发布 ${published.length} · 草稿 ${drafts.length}`}
           icon={FileText}
           delay="reveal-1"
@@ -149,7 +161,7 @@ export default function Dashboard() {
         <StatCard
           label="评论"
           en="Comments"
-          value={state.comments.filter((c) => c.status !== "spam").length}
+          value={comments.filter((c) => c.status !== "spam").length}
           sub={`待审核 ${pendingComments.length} 条`}
           icon={MessageSquare}
           delay="reveal-3"
@@ -157,8 +169,8 @@ export default function Dashboard() {
         <StatCard
           label="照片"
           en="Photos"
-          value={state.photos.length}
-          sub={`${state.albums.length} 个相册`}
+          value={photos.length}
+          sub={`${albums.length} 个相册`}
           icon={ImageIcon}
           delay="reveal-4"
         />
@@ -184,7 +196,7 @@ export default function Dashboard() {
           }
         />
         <div className="p-4">
-          <TrafficChart data={state.traffic} />
+          <TrafficChart data={traffic} />
         </div>
       </Card>
 
@@ -217,8 +229,8 @@ export default function Dashboard() {
                       {p.title}
                     </div>
                     <div className="mt-0.5 truncate text-xs text-ash">
-                      {state.categories.find((c) => c.id === p.categoryId)
-                        ?.name ?? "未分类"}{" "}
+                      {categories.find((c) => c.id === p.categoryId)?.name ??
+                        "未分类"}{" "}
                       · {timeAgo(p.updatedAt)}
                     </div>
                   </div>

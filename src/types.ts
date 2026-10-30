@@ -5,12 +5,14 @@ export interface Post {
   title: string;
   desc: string; // 摘要
   content: string; // Markdown
-  categoryId: string;
-  tagIds: string[];
+  /** 分类 id（对应 Category.id） */
+  categoryId: string | null;
+  /** 标签 id 列表（对应 Tag.id） */
+  tagIds: number[];
   status: PostStatus;
-  cover?: string; // 封面图片（objectURL / dataURL，仅会话内有效）
+  cover: string;
   views: number;
-  createdAt: string; // ISO
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -22,7 +24,7 @@ export interface Category {
 }
 
 export interface Tag {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   hue: number;

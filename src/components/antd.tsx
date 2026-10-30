@@ -1,5 +1,5 @@
 import type {ReactNode} from "react";
-import {ConfigProvider, theme as antdTheme} from "antd";
+import {App, ConfigProvider, theme as antdTheme} from "antd";
 import zhCN from "antd/locale/zh_CN";
 import {useTheme} from "../theme/useTheme";
 
@@ -51,7 +51,7 @@ export function AntdProvider({children}: {children: ReactNode}) {
         token: dark ? darkToken : lightToken,
       }}
     >
-      {children}
+      <App>{children}</App>
     </ConfigProvider>
   );
 }

@@ -1,188 +1,28 @@
-import { Empty, Image } from "antd";
-import {
-  Heart,
-  ImagePlus,
-  MapPin,
-  MessageCircle,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
+import { App, Empty } from "antd";
+import { ImagePlus, MapPin, Sparkles, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { MomentComments } from "../components/MomentComments";
+import { MomentCard } from "../components/MomentCard";
 import {
   Button,
   Card,
   ConfirmDialog,
-  IconButton,
   TextArea,
   TextInput,
   UserAvatar,
 } from "../components/ui";
-import { useStore } from "../data/hooks";
+import { seedState } from "../data/seed";
 import type { Moment } from "../types";
-import { gradientSrc } from "../utils/art";
-import { formatCount, timeAgo } from "../utils/format";
 
 const MAX_IMAGES = 9;
 
-/* 图片统一铺满父容器（antd Image 外层是 .ant-image） */
-const TILE_CLASS_NAMES = { root: "photo-tile", image: "photo-tile-img" };
-const TILE_STYLES = {
-  root: {
-    position: "absolute",
-    inset: 0,
-    display: "block",
-    width: "100%",
-    height: "100%",
-  } as const,
-  image: { width: "100%", height: "100%", objectFit: "cover" } as const,
-};
-
-/* 九宫格：1 张单图大样，2/4 张两列，其余三列 */
-function gridClass(n: number) {
-  if (n === 1) return "";
-  if (n === 2) return "grid grid-cols-2 gap-1.5 max-w-[280px]";
-  if (n === 4) return "grid grid-cols-2 gap-1.5 max-w-[360px]";
-  return "grid grid-cols-3 gap-1.5 max-w-[420px]";
-}
-
-function MomentImages({ moment }: { moment: Moment }) {
-  const images = moment.images;
-  if (images.length === 0) return null;
-
-  return (
-    <Image.PreviewGroup>
-      <div className={gridClass(images.length)}>
-        {images.map((src, i) => (
-          <div
-            key={`${moment.id}-img-${i}`}
-            className={
-              images.length === 1
-                ? "relative max-w-[320px] aspect-4/3 overflow-hidden rounded-lg border border-line bg-raised"
-                : "relative aspect-square overflow-hidden rounded-md border border-line bg-raised"
-            }
-          >
-            <Image
-              src={src}
-              alt={`${moment.content.slice(0, 12)} 配图 ${i + 1}`}
-              loading="lazy"
-              decoding="async"
-              placeholder={<span className="photo-skeleton" />}
-              /* objectURL 会话失效后回退到渐变图，避免出现破图 */
-              fallback={gradientSrc(`${moment.id}-${i}`)}
-              classNames={TILE_CLASS_NAMES}
-              styles={TILE_STYLES}
-            />
-          </div>
-        ))}
-      </div>
-    </Image.PreviewGroup>
-  );
-}
-
-/* ============ 单条动态 ============ */
-function MomentCard({
-  moment,
-  me,
-  index,
-  onDeleteMoment,
-  onDeleteComment,
-}: {
-  moment: Moment;
-  me: string;
-  index: number;
-  onDeleteMoment: (id: string) => void;
-  onDeleteComment: (momentId: string, commentId: string) => void;
-}) {
-  const { toggleMomentLike } = useStore();
-  const [open, setOpen] = useState(true);
-  const liked = moment.likes.includes(me);
-
-  return (
-    <li className="reveal" style={{ animationDelay: `${Math.min(index, 6) * 0.05}s` }}>
-      <Card className="transition-colors hover:border-line-strong">
-        <div className="p-5">
-          {/* 正文 + 删除 */}
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              {moment.content && (
-                <p className="text-[14px] leading-relaxed whitespace-pre-wrap text-cream">
-                  {moment.content}
-                </p>
-              )}
-            </div>
-            <IconButton
-              icon={Trash2}
-              label="删除动态"
-              danger
-              onClick={() => onDeleteMoment(moment.id)}
-            />
-          </div>
-
-          <div className="mt-2.5">
-            <MomentImages moment={moment} />
-          </div>
-
-          {/* 元信息 + 操作行 */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ash">
-            {moment.location && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin size={12} />
-                {moment.location}
-              </span>
-            )}
-            <span className="tnum">{timeAgo(moment.createdAt)}</span>
-
-            <button
-              type="button"
-              onClick={() => toggleMomentLike(moment.id, me)}
-              aria-pressed={liked}
-              className={`inline-flex cursor-pointer items-center gap-1 transition-colors ${
-                liked ? "text-ruby" : "hover:text-[#409eff]"
-              }`}
-            >
-              <Heart size={13} style={{ fill: liked ? "currentColor" : "none" }} />
-              <span className="tnum">{formatCount(moment.likes.length)}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              aria-label={`评论 ${moment.comments.length} 条`}
-              className={`inline-flex cursor-pointer items-center gap-1 transition-colors ${
-                open ? "text-[#409eff]" : "hover:text-[#409eff]"
-              }`}
-            >
-              <MessageCircle size={13} />
-              <span className="tnum">{formatCount(moment.comments.length)}</span>
-            </button>
-          </div>
-
-          {/* 朋友圈式评论块 */}
-          <MomentComments
-            moment={moment}
-            me={me}
-            open={open}
-            onClose={() => setOpen(false)}
-            onDeleteComment={(commentId) => onDeleteComment(moment.id, commentId)}
-          />
-        </div>
-      </Card>
-    </li>
-  );
-}
-
 export default function Moments() {
-  const {
-    state,
-    addMoment,
-    deleteMoment,
-    deleteMomentComment,
-    notify,
-  } = useStore();
-  const me = state.settings.username?.trim() || "DAVAID";
+  const { message } = App.useApp();
+
+  /* 页面自身状态：接真实数据时把这里的初值换成接口拉取 */
+  const [moments, setMoments] = useState<Moment[]>([]);
+  const [me] = useState(seedState.settings.username || "DAVAID");
+  const [avatar] = useState<string | undefined>(undefined);
+  const [slogan] = useState(seedState.settings.slogan || "记录生活的每一帧");
 
   /* 发布区 */
   const [draft, setDraft] = useState("");
@@ -191,25 +31,24 @@ export default function Moments() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* 删除目标：动态 或 某条评论 */
-  const [toDelete, setToDelete] = useState<{
-    kind: "moment" | "comment";
-    momentId: string;
-    commentId?: string;
-  } | null>(null);
+  const [toDelete, setToDelete] = useState<
+    { kind: "moment" | "comment"; momentId: string; commentId?: string } | null
+  >(null);
 
-  const moments = useMemo(() => state.moments ?? [], [state.moments]);
-
-  const stats = useMemo(() => {
-    const likes = moments.reduce((s, m) => s + m.likes.length, 0);
-    const comments = moments.reduce((s, m) => s + m.comments.length, 0);
-    return { count: moments.length, likes, comments };
-  }, [moments]);
+  const stats = useMemo(
+    () => ({
+      count: moments.length,
+      likes: moments.reduce((s, m) => s + m.likes.length, 0),
+      comments: moments.reduce((s, m) => s + m.comments.length, 0),
+    }),
+    [moments],
+  );
 
   const pickPics = (files: FileList | null) => {
     if (!files) return;
     const room = MAX_IMAGES - pics.length;
     if (room <= 0) {
-      notify(`最多只能上传 ${MAX_IMAGES} 张图片`);
+      message.warning(`最多只能上传 ${MAX_IMAGES} 张图片`);
       return;
     }
     Array.from(files)
@@ -220,14 +59,81 @@ export default function Moments() {
 
   const publish = () => {
     if (!draft.trim() && pics.length === 0) return;
-    addMoment({
-      content: draft.trim(),
-      images: pics,
-      location: place.trim() || undefined,
-    });
+    setMoments((prev) => [
+      {
+        id: `mo-${Date.now().toString(36)}`,
+        content: draft.trim(),
+        images: pics,
+        createdAt: new Date().toISOString(),
+        likes: [],
+        comments: [],
+        location: place.trim() || undefined,
+      },
+      ...prev,
+    ]);
+    message.success("动态已发布");
     setDraft("");
     setPlace("");
     setPics([]);
+  };
+
+  const toggleLike = (id: string) => {
+    setMoments((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              likes: m.likes.includes(me)
+                ? m.likes.filter((u) => u !== me)
+                : [...m.likes, me],
+            }
+          : m,
+      ),
+    );
+  };
+
+  const addComment = (id: string, content: string, parentId?: string) => {
+    setMoments((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              comments: [
+                ...m.comments,
+                {
+                  id: `mc-${Date.now().toString(36)}`,
+                author: me,
+                content,
+                createdAt: new Date().toISOString(),
+                isAdmin: true,
+                parentId,
+              },
+            ],
+          }
+          : m,
+      ),
+    );
+  };
+
+  const removeComment = (id: string, commentId: string) => {
+    setMoments((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        // 级联删除该评论及其所有回复
+        const doomed = new Set<string>([commentId]);
+        let grew = true;
+        while (grew) {
+          grew = false;
+          for (const c of m.comments) {
+            if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
+          doomed.add(c.id);
+          grew = true;
+        }
+      }
+    }
+        return { ...m, comments: m.comments.filter((c) => !doomed.has(c.id)) };
+      }),
+    );
   };
 
   const canPublish = draft.trim().length > 0 || pics.length > 0;
@@ -236,13 +142,14 @@ export default function Moments() {
     <div className="mx-auto max-w-205 space-y-5">
       {/* ============ 封面 ============ */}
       <Card className="reveal overflow-hidden">
-        <div
-          className="relative h-40 bg-linear-to-br from-[#409eff] via-[#3a7bd5] to-[#1d3557]"
-          style={{
-            backgroundImage:
-              "linear-gradient(135deg, #409eff 0%, #2b6cb0 45%, #16243d 100%)",
-          }}
-        >
+        <div className="relative h-40">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, #409eff 0%, #2b6cb0 45%, #16243d 100%)",
+            }}
+          />
           <div
             className="absolute inset-0 opacity-40"
             style={{
@@ -255,15 +162,13 @@ export default function Moments() {
               <span className="font-display text-[15px] font-bold">{me}</span>
             </div>
             <div className="rounded-full border-4 border-surface bg-surface">
-              <UserAvatar name={me} src={state.settings.avatar} size={64} />
+              <UserAvatar name={me} src={avatar} size={64} />
             </div>
           </div>
         </div>
 
         <div className="flex mt-2 flex-wrap items-center gap-x-6 gap-y-1 pt-5 pb-4 pl-5 pr-4">
-          <p className="text-[12px] text-ash">
-            {state.settings.slogan || "记录生活的每一帧"}
-          </p>
+          <p className="text-[12px] text-ash">{slogan}</p>
           <div className="ml-auto flex items-center gap-4 text-[12px]">
             <span className="text-ash">
               动态 <b className="tnum ml-1 text-cream">{stats.count}</b>
@@ -299,14 +204,15 @@ export default function Moments() {
                   <img
                     src={src}
                     alt={`待发布配图 ${i + 1}`}
-                    className="h-full w-full object-cover"
-                  />
+                  className="h-full w-full object-cover"
+                />
                   <button
                     type="button"
                     onClick={() =>
                       setPics((prev) => prev.filter((_, idx) => idx !== i))
                     }
-                    aria-label={`移除第 ${i + 1} 张图片`}
+                    aria-label={`移除第 ${i + 1} 张图片`
+                }
                     className="absolute top-1 right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <X size={12} />
@@ -346,6 +252,7 @@ export default function Moments() {
               onChange={(e) => setPlace(e.target.value)}
               placeholder="所在位置（可选）"
               aria-label="所在位置"
+              prefix={<MapPin size={13} className="text-ash" />}
               className="w-44"
             />
 
@@ -371,20 +278,24 @@ export default function Moments() {
           />
         </Card>
       ) : (
-        <ul className="space-y-4">
+        <div className="space-y-4">
           {moments.map((m, i) => (
             <MomentCard
               key={m.id}
               moment={m}
               me={me}
               index={i}
-              onDeleteMoment={(id) => setToDelete({ kind: "moment", momentId: id })}
+              onToggleLike={toggleLike}
+              onAddComment={addComment}
+              onDeleteMoment={(id) =>
+                setToDelete({ kind: "moment", momentId: id })
+              }
               onDeleteComment={(momentId, commentId) =>
                 setToDelete({ kind: "comment", momentId, commentId })
               }
             />
           ))}
-        </ul>
+        </div>
       )}
 
       {/* ============ 删除确认 ============ */}
@@ -400,9 +311,11 @@ export default function Moments() {
         onCancel={() => setToDelete(null)}
         onConfirm={() => {
           if (!toDelete) return;
-          if (toDelete.kind === "moment") deleteMoment(toDelete.momentId);
-          else if (toDelete.commentId)
-            deleteMomentComment(toDelete.momentId, toDelete.commentId);
+          if (toDelete.kind === "moment") {
+            setMoments((prev) => prev.filter((m) => m.id !== toDelete.momentId));
+          } else if (toDelete.commentId) {
+            removeComment(toDelete.momentId, toDelete.commentId);
+          }
           setToDelete(null);
         }}
       />

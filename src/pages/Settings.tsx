@@ -1,12 +1,16 @@
 import { Database, Globe, ImagePlus, RotateCcw, Save, Trash2, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
+import { App } from "antd";
 import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, TextArea, TextInput, UserAvatar } from "../components/ui";
-import { useStore } from "../data/hooks";
+import { seedState } from "../data/seed";
 import type { Settings } from "../types";
 
 export default function SettingsPage() {
-  const { state, updateSettings, resetAll, notify } = useStore();
-  const [form, setForm] = useState<Settings>({ ...state.settings });
+  const { message } = App.useApp();
+
+  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
+  const [settings, setSettings] = useState<Settings>({ ...seedState.settings });
+  const [form, setForm] = useState<Settings>({ ...seedState.settings });
   const [confirmReset, setConfirmReset] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
 
@@ -25,18 +29,33 @@ export default function SettingsPage() {
   };
 
   const displayName = form.username.trim() || "DAVAID";
-  const liveName = state.settings.username?.trim() || "DAVAID";
+  const liveName = settings.username?.trim() || "DAVAID";
 
   const save = () => {
     if (!form.siteTitle.trim()) {
-      notify("站点标题不能为空");
+      message.warning("站点标题不能为空");
       return;
     }
     if (!form.username.trim()) {
-      notify("用户名不能为空");
+      message.warning("用户名不能为空");
       return;
     }
-    updateSettings(form);
+    setSettings(form);
+    message.success("设置已保存");
+  };
+
+  /* 清空本地缓存，回到初始空状态 */
+  const resetAll = () => {
+    try {
+      localStorage.removeItem("davaid-admin-state-v1");
+      localStorage.removeItem("davaid-admin-state-v2");
+      sessionStorage.removeItem("davaid-admin-auth");
+    } catch {
+      /* localStorage 不可用时忽略 */
+    }
+    setSettings({ ...seedState.settings });
+    setForm({ ...seedState.settings });
+    message.success("已清空本地数据");
   };
 
   return (
@@ -169,7 +188,7 @@ export default function SettingsPage() {
           <div className="space-y-4 p-5">
             {/* 头像 + 用户名 */}
             <div className="flex items-center gap-3">
-              <UserAvatar name={liveName} src={state.settings.avatar} size={40} />
+              <UserAvatar name={liveName} src={settings.avatar} size={40} />
               <div className="min-w-0">
                 <div className="font-display text-[10px] tracking-[0.18em] text-ash uppercase">Author</div>
                 <p className="truncate font-display text-[15px] font-bold tracking-wide">{liveName}</p>
@@ -177,20 +196,20 @@ export default function SettingsPage() {
             </div>
             <div>
               <div className="mb-1 font-display text-[10px] tracking-[0.18em] text-ash uppercase">Title</div>
-              <p className="font-display text-lg font-bold tracking-wide">{state.settings.siteTitle}</p>
+              <p className="font-display text-lg font-bold tracking-wide">{settings.siteTitle}</p>
             </div>
             <div>
               <div className="mb-1 font-display text-[10px] tracking-[0.18em] text-ash uppercase">Slogan</div>
-              <p className="border-l-2 border-ember pl-3 text-sm text-fog italic">{state.settings.slogan}</p>
+              <p className="border-l-2 border-ember pl-3 text-sm text-fog italic">{settings.slogan}</p>
             </div>
             <div>
               <div className="mb-1 font-display text-[10px] tracking-[0.18em] text-ash uppercase">Description</div>
-              <p className="text-sm leading-relaxed text-fog">{state.settings.description}</p>
+              <p className="text-sm leading-relaxed text-fog">{settings.description}</p>
             </div>
             <div className="flex flex-wrap gap-2 border-t border-dashed border-line pt-4">
-              <Badge tone="neutral">{state.settings.icp}</Badge>
-              <Badge tone="haze">{state.settings.github.replace(/^https?:\/\//, "")}</Badge>
-              <Badge tone="haze">{state.settings.email}</Badge>
+              <Badge tone="neutral">{settings.icp}</Badge>
+              <Badge tone="haze">{settings.github.replace(/^https?:\/\//, "")}</Badge>
+              <Badge tone="haze">{settings.email}</Badge>
             </div>
           </div>
         </Card>
@@ -202,10 +221,10 @@ export default function SettingsPage() {
           />
           <div className="flex flex-wrap items-center justify-between gap-3 p-5">
             <p className="max-w-64 text-xs leading-relaxed text-ash">
-              所有演示数据（文章、评论、照片、设置）保存在浏览器 localStorage，可一键恢复初始种子数据。
+              数据保存在浏览器 localStorage，可一键清空为初始空状态（待接入真实数据）。
             </p>
             <Button variant="danger" icon={RotateCcw} onClick={() => setConfirmReset(true)}>
-              重置演示数据
+              清空本地数据
             </Button>
           </div>
         </Card>
@@ -213,9 +232,9 @@ export default function SettingsPage() {
 
       <ConfirmDialog
         open={confirmReset}
-        title="重置演示数据"
-        body="将清除本地所有改动（新增、编辑、删除全部回滚），恢复初始演示数据。确定继续吗？"
-        confirmText="重置"
+        title="清空本地数据"
+        body="将清空本地所有数据（文章、评论、相册、照片、动态等），恢复到初始空状态。确定继续吗？"
+        confirmText="清空"
         onCancel={() => setConfirmReset(false)}
         onConfirm={() => {
           setConfirmReset(false);

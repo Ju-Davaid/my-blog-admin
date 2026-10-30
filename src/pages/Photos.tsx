@@ -14,46 +14,12 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { Card, ConfirmDialog, IconButton } from "../components/ui";
 import { Trash2 } from "lucide-react";
-import { useStore } from "../data/hooks";
-import type { Photo } from "../types";
+import { seedState } from "../data/seed";
+import type { Album, Photo } from "../types";
+import { gradientSrc } from "../utils/art";
 
-/* ---------- 兜底图：没有上传文件时按标题散列出色相，现造一张渐变 SVG ---------- */
-/* 用 SVG dataURL 而不是纯 CSS 渐变，是为了让它成为真实图片源，
-   这样 antd Image 的懒加载与放大预览对兜底图同样成立 */
-
-const gradientCache = new Map<string, string>();
-
-function hashHue(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    h = (h * 31 + seed.charCodeAt(i)) % 360;
-  }
-  return h;
-}
-
-function gradientSrc(seed: string) {
-  const cached = gradientCache.get(seed);
-  if (cached) return cached;
-
-  const h1 = hashHue(seed);
-  const h2 = (h1 + 52) % 360;
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">` +
-    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
-    `<stop offset="0" stop-color="hsl(${h1} 34% 42%)"/>` +
-    `<stop offset="0.55" stop-color="hsl(${h2} 28% 26%)"/>` +
-    `<stop offset="1" stop-color="hsl(${h1} 42% 15%)"/>` +
-    `</linearGradient></defs>` +
-    `<rect width="800" height="600" fill="url(#g)"/>` +
-    `<circle cx="632" cy="128" r="176" fill="hsl(${h2} 72% 76%)" opacity="0.16"/>` +
-    `<circle cx="128" cy="516" r="212" fill="hsl(${h1} 68% 62%)" opacity="0.12"/>` +
-    `</svg>`;
-
-  const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  gradientCache.set(seed, url);
-  return url;
-}
-
+/* 兜底图：没有上传文件时按 id 散列出现成一张渐变 SVG（真实图片源，
+   这样 antd Image 的懒加载与放大预览对兜底图同样成立） */
 const photoSrc = (p: Photo) => p.src ?? gradientSrc(p.id);
 
 /* 铺满父容器的图片壳：antd Image 外层是 .ant-image，需显式撑满 */
@@ -74,8 +40,35 @@ const TILE_STYLES = {
 };
 
 export default function Photos() {
-  const { state, addAlbum, deleteAlbum, addPhoto, deletePhoto } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
+  const [albums, setAlbums] = useState<Album[]>(seedState.albums);
+  const [photos, setPhotos] = useState<Photo[]>(seedState.photos);
+
+  const addAlbum = (name: string, description: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return false;
+    setAlbums((prev) => [
+      ...prev,
+      {
+        id: `al-${Date.now().toString(36)}`,
+        name: trimmed,
+        description: description.trim(),
+        createdAt: new Date().toISOString().slice(0, 10),
+      },
+    ]);
+    return true;
+  };
+
+  const deleteAlbum = (id: string) => {
+    setAlbums((prev) => prev.filter((a) => a.id !== id));
+    setPhotos((prev) => prev.filter((p) => p.albumId !== id));
+  };
+
+  const addPhoto = (photo: Photo) => setPhotos((prev) => [...prev, photo]);
+  const deletePhoto = (id: string) =>
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
 
   // 当前进入的相册 id；null = 一级（相册列表）
   const [currentAlbumId, setCurrentAlbumId] = useState<string | null>(null);
@@ -88,19 +81,19 @@ export default function Photos() {
   const [newDesc, setNewDesc] = useState("");
 
   const currentAlbum = useMemo(
-    () => state.albums?.find((a) => a.id === currentAlbumId) ?? null,
-    [state.albums, currentAlbumId],
+    () => albums?.find((a) => a.id === currentAlbumId) ?? null,
+    [albums, currentAlbumId],
   );
   const albumPhotos = useMemo(
     () =>
       currentAlbumId
-        ? state.photos.filter((p) => p.albumId === currentAlbumId)
+        ? photos.filter((p) => p.albumId === currentAlbumId)
         : [],
-    [state.photos, currentAlbumId],
+    [photos, currentAlbumId],
   );
 
   const photoCount = (albumId: string) =>
-    state.photos.filter((p) => p.albumId === albumId).length;
+    photos.filter((p) => p.albumId === albumId).length;
 
   const onUpload = (files: FileList | null) => {
     if (!files || !currentAlbumId) return;
@@ -236,7 +229,7 @@ export default function Photos() {
         <ConfirmDialog
           open={toDeletePhoto !== null}
           title="删除图片"
-          body={`确定删除《${state.photos.find((p) => p.id === toDeletePhoto)?.title ?? ""}》吗？此操作不可撤销。`}
+          body={`确定删除《${photos.find((p) => p.id === toDeletePhoto)?.title ?? ""}》吗？此操作不可撤销。`}
           confirmText="删除"
           onCancel={() => setToDeletePhoto(null)}
           onConfirm={() => {
@@ -255,7 +248,7 @@ export default function Photos() {
         <div>
           <h2 className="text-[16px] font-semibold text-cream">相册</h2>
           <p className="text-[12px] text-ash">
-            共 {state.albums.length} 个相册 · {state.photos.length} 张照片
+            共 {albums.length} 个相册 · {photos.length} 张照片
           </p>
         </div>
         <AntButton
@@ -267,7 +260,7 @@ export default function Photos() {
         </AntButton>
       </div>
 
-      {state.albums.length === 0 ? (
+      {albums.length === 0 ? (
         <div className="reveal reveal-1">
           <Card className="border-dashed py-14">
             <Empty
@@ -290,9 +283,9 @@ export default function Photos() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {state.albums.map((a, i) => {
+          {albums.map((a, i) => {
             const count = photoCount(a.id);
-            const cover = state.photos.find((p) => p.albumId === a.id);
+            const cover = photos.find((p) => p.albumId === a.id);
             return (
               <div
                 key={a.id}
@@ -395,7 +388,7 @@ export default function Photos() {
       <ConfirmDialog
         open={toDeleteAlbum !== null}
         title="删除相册"
-        body={`确定删除相册《${state.albums.find((a) => a.id === toDeleteAlbum)?.name ?? ""}》吗？相册内的 ${photoCount(toDeleteAlbum ?? "")} 张图片也会一并删除，此操作不可撤销。`}
+        body={`确定删除相册《${albums.find((a) => a.id === toDeleteAlbum)?.name ?? ""}》吗？相册内的 ${photoCount(toDeleteAlbum ?? "")} 张图片也会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setToDeleteAlbum(null)}
         onConfirm={() => {
