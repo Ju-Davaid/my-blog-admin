@@ -37,7 +37,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
     desc: "",
     content: "",
     categoryId: null,
-    tagIds: [],
+    tagIds: "1,2",
     status: PostStatus.Draft,
     cover: "",
     views: 0,
@@ -56,7 +56,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
     () => form.content.replace(/\s/g, "").length,
     [form.content],
   );
-
+  const tagIdList = useMemo(() => form.tagIds.split(","), [form.tagIds]);
   // 保存文章
   const save = async () => {
     if (!form.title.trim()) {
@@ -70,7 +70,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
       desc: form.desc,
       content: form.content,
       categoryId: form.categoryId,
-      tagIds: form.tagIds.join(","),
+      tagIds: form.tagIds,
       status: form.status,
       cover: form.cover,
     });
@@ -100,13 +100,16 @@ function EditorForm({ isCreate = false }: EditorProps) {
     callBack(urls);
   };
   // 切换标签
-  const toggleTag = (id: number) =>
+  const toggleTag = (id: number | string) => {
+    id = id.toString();
     set(
       "tagIds",
-      form.tagIds?.includes(id)
-        ? form.tagIds.filter((t) => t !== id)
-        : [...(form.tagIds ?? []), id],
+      (tagIdList?.includes(id)
+        ? tagIdList.filter((t) => t !== id)
+        : [...(form.tagIds ?? []), id]
+      ).join(","),
     );
+  };
 
   const pickCover = async (files: FileList | null) => {
     const f = files?.[0];
@@ -256,7 +259,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
             <Field label="标签" hint="点击切换，已选高亮">
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {tags.map((t) => {
-                  const on = form?.tagIds?.includes(t.id);
+                  const on = tagIdList?.includes(t.id.toString());
                   return (
                     <button
                       key={t.id}
@@ -276,9 +279,9 @@ function EditorForm({ isCreate = false }: EditorProps) {
             </Field>
             {form.tagIds && form.tagIds?.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1 border-t border-dashed border-line pt-3">
-                {form.tagIds.map((id) => (
+                {tagIdList.map((id) => (
                   <Badge key={id} tone="ember">
-                    {tags.find((t) => t.id === id)?.name}
+                    {tags.find((t) => t.id.toString() === id)?.name}
                   </Badge>
                 ))}
               </div>

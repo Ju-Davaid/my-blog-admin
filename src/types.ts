@@ -9,12 +9,12 @@ export interface Post {
   desc: string; // 摘要
   content: string; // Markdown
   categoryId: string | null;
-  tagIds: number[];
+  tagIds: string;
   status: PostStatus;
   cover: string;
   views: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Category {
@@ -115,4 +115,11 @@ export interface AppState {
   moments: Moment[];
   settings: Settings;
   traffic: TrafficPoint[];
+}
+
+export interface PageVO<T> {
+  list: T[];
+  total: number;
+  pageSize: number;
+  pageNum: number;
 }

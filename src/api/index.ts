@@ -14,6 +14,9 @@ export const createOrUpdatePost = (data: CreatePostDTO) => {
   return request.post("/post/create", data);
 };
 
+export const getPostList = (pageSize = 10, pageNum = 1) =>
+  request.get(`/post/list?pageSize=${pageSize}&pageNum=${pageNum}`);
+
 export const getPostById = (id: string) => request.get(`/posts/${id}`);
 
 export const uploadFile = (file: File) => {
