@@ -11,6 +11,7 @@ import PostEditor from "./pages/PostEditor";
 import Taxonomy from "./pages/Taxonomy";
 import Photos from "./pages/Photos";
 import Comments from "./pages/Comments";
+import Moments from "./pages/Moments";
 import SettingsPage from "./pages/Settings";
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/taxonomy" element={<Taxonomy />} />
                 <Route path="/photos" element={<Photos />} />
                 <Route path="/comments" element={<Comments />} />
+                <Route path="/moments" element={<Moments />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>

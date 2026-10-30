@@ -1,6 +1,6 @@
-import { Database, Globe, RotateCcw, Save } from "lucide-react";
-import { useState } from "react";
-import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, TextArea, TextInput } from "../components/ui";
+import { Database, Globe, ImagePlus, RotateCcw, Save, Trash2, UserRound } from "lucide-react";
+import { useRef, useState } from "react";
+import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, TextArea, TextInput, UserAvatar } from "../components/ui";
 import { useStore } from "../data/hooks";
 import type { Settings } from "../types";
 
@@ -8,13 +8,32 @@ export default function SettingsPage() {
   const { state, updateSettings, resetAll, notify } = useStore();
   const [form, setForm] = useState<Settings>({ ...state.settings });
   const [confirmReset, setConfirmReset] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const pickAvatar = (files: FileList | null) => {
+    const f = files?.[0];
+    if (!f || !f.type.startsWith("image/")) return;
+    set("avatar", URL.createObjectURL(f));
+  };
+
+  const clearAvatar = () => {
+    if (form.avatar) URL.revokeObjectURL(form.avatar);
+    set("avatar", "");
+  };
+
+  const displayName = form.username.trim() || "DAVAID";
+  const liveName = state.settings.username?.trim() || "DAVAID";
+
   const save = () => {
     if (!form.siteTitle.trim()) {
       notify("站点标题不能为空");
+      return;
+    }
+    if (!form.username.trim()) {
+      notify("用户名不能为空");
       return;
     }
     updateSettings(form);
@@ -48,6 +67,85 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="reveal reveal-1">
+          <CardHeader title="账号 · Account" extra={<UserRound size={14} className="text-ash" />} />
+          <div className="space-y-4 p-5">
+            {/* 头像 */}
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium text-fog">头像</span>
+              <div className="flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => avatarRef.current?.click()}
+                  aria-label="更换头像"
+                  title="更换头像"
+                  className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-line bg-raised"
+                >
+                  {form.avatar ? (
+                    <img src={form.avatar} alt="头像预览" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-display text-lg font-bold text-fog">
+                      {displayName.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-ink/55 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    更换
+                  </span>
+                </button>
+
+                <div className="min-w-48 flex-1 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      icon={ImagePlus}
+                      className="min-h-[30px] text-xs"
+                      onClick={() => avatarRef.current?.click()}
+                    >
+                      上传头像
+                    </Button>
+                    {form.avatar && (
+                      <Button variant="ghost" icon={Trash2} onClick={clearAvatar}>
+                        移除
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs leading-relaxed text-ash">
+                    支持 JPG / PNG，建议 1:1 方图。演示环境无真实存储，头像仅在当前会话有效，刷新后需重新上传。
+                  </p>
+                </div>
+
+                <input
+                  ref={avatarRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  aria-label="选择头像文件"
+                  onChange={(e) => {
+                    pickAvatar(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+
+            <Field label="用户名" hint="用于后台右上角显示与评论回复署名">
+              <TextInput
+                value={form.username}
+                onChange={(e) => set("username", e.target.value)}
+                placeholder="例如：DAVAID"
+                maxLength={24}
+              />
+            </Field>
+
+            <div className="flex items-center gap-3 border-t border-dashed border-line pt-4">
+              <Button icon={Save} onClick={save}>
+                保存更改
+              </Button>
+              <span className="text-xs text-ash">当前：{displayName}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="reveal reveal-2">
           <CardHeader title="联系与社交 · Links" />
           <div className="space-y-4 p-5">
             <Field label="GitHub">
@@ -66,9 +164,17 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-5">
-        <Card className="reveal reveal-2">
+        <Card className="reveal reveal-3">
           <CardHeader title="当前生效 · Live" />
           <div className="space-y-4 p-5">
+            {/* 头像 + 用户名 */}
+            <div className="flex items-center gap-3">
+              <UserAvatar name={liveName} src={state.settings.avatar} size={40} />
+              <div className="min-w-0">
+                <div className="font-display text-[10px] tracking-[0.18em] text-ash uppercase">Author</div>
+                <p className="truncate font-display text-[15px] font-bold tracking-wide">{liveName}</p>
+              </div>
+            </div>
             <div>
               <div className="mb-1 font-display text-[10px] tracking-[0.18em] text-ash uppercase">Title</div>
               <p className="font-display text-lg font-bold tracking-wide">{state.settings.siteTitle}</p>
@@ -89,7 +195,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="reveal reveal-3">
+        <Card className="reveal reveal-4">
           <CardHeader
             title="数据 · Data"
             extra={<Database size={14} className="text-ash" />}

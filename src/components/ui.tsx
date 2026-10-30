@@ -1,3 +1,4 @@
+import {useState} from "react";
 import type {InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes} from "react";
 import {Button as AntButton, Modal as AntModal, Tag, Input, Empty} from "antd";
 import {
@@ -223,6 +224,42 @@ export function EmptyState({
       </Empty>
       <InboxOutlined className="hidden" />
     </div>
+  );
+}
+
+/* ---------- 头像（objectURL 失效时回退为首字母） ---------- */
+
+export function UserAvatar({
+  name,
+  src,
+  size = 28,
+  className = "",
+}: {
+  name: string;
+  src?: string;
+  size?: number;
+  className?: string;
+}) {
+  // 只记住「哪个 src 加载失败」，换图自动恢复，不需要 useEffect 重置
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
+  const usable = src && brokenSrc !== src;
+
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#409eff] font-display font-bold text-white ${className}`}
+      style={{width: size, height: size, fontSize: Math.round(size * 0.42)}}
+    >
+      {usable ? (
+        <img
+          src={src}
+          alt={name}
+          onError={() => setBrokenSrc(src ?? null)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        name.slice(0, 1).toUpperCase()
+      )}
+    </span>
   );
 }
 

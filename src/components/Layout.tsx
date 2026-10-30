@@ -10,17 +10,20 @@ import {
   FileTextOutlined,
   DashboardOutlined,
   LinkOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import {Dropdown} from "antd";
 import {MoonOutlined, SunOutlined} from "@ant-design/icons";
 import {useStore} from "../data/hooks";
 import {useTheme} from "../theme/useTheme";
+import {UserAvatar} from "./ui";
 
 const NAV = [
   {to: "/", label: "仪表盘", icon: DashboardOutlined},
   {to: "/posts", label: "文章", icon: FileTextOutlined},
   {to: "/taxonomy", label: "分类标签", icon: FolderOutlined},
   {to: "/photos", label: "照片", icon: PictureOutlined},
+  {to: "/moments", label: "动态", icon: MessageOutlined},
   {to: "/comments", label: "评论", icon: CommentOutlined},
   {to: "/settings", label: "设置", icon: SettingOutlined},
 ];
@@ -77,6 +80,7 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
   const [drawer, setDrawer] = useState(false);
   const title = titleOf(location.pathname);
   const dark = mode === "dark";
+  const user = state.settings.username?.trim() || "DAVAID";
 
   const userMenu = {
     items: [
@@ -142,10 +146,8 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
             </button>
             <Dropdown menu={userMenu} placement="bottomRight" trigger={["click"]}>
               <button className="flex cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-raised">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#409eff] text-[12px] font-bold text-white">
-                  D
-                </span>
-                <span className="hidden text-[13px] text-cream md:block">Davaid</span>
+                <UserAvatar name={user} src={state.settings.avatar} size={28} />
+                <span className="hidden max-w-32 truncate text-[13px] text-cream md:block">{user}</span>
               </button>
             </Dropdown>
             {/* 移动端菜单按钮 */}

@@ -25,3 +25,6 @@ export function timeAgo(iso: string): string {
 }
 
 export const formatNumber = (n: number) => n.toLocaleString("zh-CN");
+
+/** 数量缩略：>99 显示 99+（评论数/点赞数等） */
+export const formatCount = (n: number) => (n > 99 ? "99+" : String(n));

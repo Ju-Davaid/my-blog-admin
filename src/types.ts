@@ -3,18 +3,15 @@ export type PostStatus = "published" | "draft";
 export interface Post {
   id: string;
   title: string;
-  slug: string;
-  excerpt: string;
+  desc: string; // 摘要
   content: string; // Markdown
   categoryId: string;
   tagIds: string[];
   status: PostStatus;
-  hue: number; // 封面主色相（生成渐变封面，作为无上传图片时的兜底）
   cover?: string; // 封面图片（objectURL / dataURL，仅会话内有效）
   views: number;
   createdAt: string; // ISO
   updatedAt: string;
-  publishedAt: string | null;
 }
 
 export interface Category {
@@ -41,6 +38,33 @@ export interface CommentItem {
   status: CommentStatus;
   createdAt: string;
   isAdmin?: boolean;
+  /** 父评论 id —— 有值表示这是一条挂在父评论下的回复 */
+  parentId?: string;
+}
+
+/* ---------- 动态（朋友圈） ---------- */
+
+export interface MomentComment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: string;
+  isAdmin?: boolean;
+  /** 回复的目标评论 id；有值表示挂在某条评论下 */
+  parentId?: string;
+}
+
+export interface Moment {
+  id: string;
+  content: string;
+  /** 配图（objectURL / dataURL，最多 9 张） */
+  images: string[];
+  createdAt: string;
+  /** 点赞人用户名 */
+  likes: string[];
+  comments: MomentComment[];
+  /** 位置（可选） */
+  location?: string;
 }
 
 export interface Album {
@@ -54,8 +78,6 @@ export interface Photo {
   id: string;
   title: string;
   albumId: string; // 所属相册 id
-  caption: string;
-  hue: number;
   src?: string; // 本地上传的 objectURL（仅会话内有效）
   takenAt: string;
 }
@@ -67,6 +89,10 @@ export interface Settings {
   icp: string;
   github: string;
   email: string;
+  /** 站长用户名（后台右上角 / 评论回复署名展示） */
+  username: string;
+  /** 头像图片（objectURL / dataURL，仅会话内有效） */
+  avatar?: string;
 }
 
 export interface TrafficPoint {
@@ -83,6 +109,7 @@ export interface AppState {
   comments: CommentItem[];
   albums: Album[];
   photos: Photo[];
+  moments: Moment[];
   settings: Settings;
   traffic: TrafficPoint[];
 }

@@ -1,5 +1,14 @@
 import { createContext } from "react";
-import type { AppState, CommentItem, CommentStatus, Photo, Post, Settings } from "../types";
+import type {
+  AppState,
+  CommentItem,
+  CommentStatus,
+  Moment,
+  MomentComment,
+  Photo,
+  Post,
+  Settings,
+} from "../types";
 
 export interface StoreContextValue {
   state: AppState;
@@ -16,6 +25,12 @@ export interface StoreContextValue {
   deleteAlbum: (id: string) => void;
   addPhoto: (photo: Photo) => void;
   deletePhoto: (id: string) => void;
+  /** 发布动态（图片 / 正文 / 位置） */
+  addMoment: (moment: Omit<Moment, "id" | "createdAt" | "likes" | "comments">) => void;
+  deleteMoment: (id: string) => void;
+  toggleMomentLike: (id: string, user: string) => void;
+  addMomentComment: (id: string, comment: Omit<MomentComment, "id" | "createdAt">) => void;
+  deleteMomentComment: (id: string, commentId: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   resetAll: () => void;
   toast: string | null;

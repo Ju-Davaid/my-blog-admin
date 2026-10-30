@@ -7,7 +7,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Album, AppState, CommentItem, CommentStatus, Photo, Post, Settings } from "../types";
+import type {
+  Album,
+  AppState,
+  CommentItem,
+  CommentStatus,
+  Moment,
+  MomentComment,
+  Photo,
+  Post,
+  Settings,
+} from "../types";
 import { slugify } from "../utils/slug";
 import { StoreContext, type StoreContextValue } from "./context";
 import { seedState } from "./seed";
@@ -30,6 +40,11 @@ type Action =
   | { type: "photo/delete"; id: string }
   | { type: "album/add"; album: Album }
   | { type: "album/delete"; id: string }
+  | { type: "moment/add"; moment: Moment }
+  | { type: "moment/delete"; id: string }
+  | { type: "moment/toggleLike"; id: string; user: string }
+  | { type: "moment/comment/add"; id: string; comment: MomentComment }
+  | { type: "moment/comment/delete"; id: string; commentId: string }
   | { type: "settings/update"; patch: Partial<Settings> }
   | { type: "reset" };
 
@@ -65,8 +80,21 @@ function reducer(state: AppState, action: Action): AppState {
           c.id === action.id ? { ...c, status: action.status } : c,
         ),
       };
-    case "comment/delete":
-      return { ...state, comments: state.comments.filter((c) => c.id !== action.id) };
+    case "comment/delete": {
+      // 删除父评论时级联删除其下所有回复
+      const doomed = new Set<string>([action.id]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const c of state.comments) {
+          if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
+            doomed.add(c.id);
+            grew = true;
+          }
+        }
+      }
+      return { ...state, comments: state.comments.filter((c) => !doomed.has(c.id)) };
+    }
     case "comment/add":
       return { ...state, comments: [action.comment, ...state.comments] };
     case "photo/add":
@@ -81,6 +109,56 @@ function reducer(state: AppState, action: Action): AppState {
         albums: state.albums.filter((a) => a.id !== action.id),
         photos: state.photos.filter((p) => p.albumId !== action.id),
       };
+    case "moment/add":
+      return { ...state, moments: [action.moment, ...state.moments] };
+    case "moment/delete":
+      return { ...state, moments: state.moments.filter((m) => m.id !== action.id) };
+    case "moment/toggleLike":
+      return {
+        ...state,
+        moments: state.moments.map((m) =>
+          m.id === action.id
+            ? {
+                ...m,
+                likes: m.likes.includes(action.user)
+                  ? m.likes.filter((u) => u !== action.user)
+                  : [...m.likes, action.user],
+              }
+            : m,
+        ),
+      };
+    case "moment/comment/add":
+      return {
+        ...state,
+        moments: state.moments.map((m) =>
+          m.id === action.id ? { ...m, comments: [...m.comments, action.comment] } : m,
+        ),
+      };
+    case "moment/comment/delete": {
+      // 级联删除该评论及其所有回复
+      const doomed = new Set<string>([action.commentId]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const m of state.moments) {
+          if (m.id !== action.id) continue;
+          for (const c of m.comments) {
+            if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
+              doomed.add(c.id);
+              grew = true;
+            }
+          }
+        }
+      }
+      return {
+        ...state,
+        moments: state.moments.map((m) =>
+          m.id === action.id
+            ? { ...m, comments: m.comments.filter((c) => !doomed.has(c.id)) }
+            : m,
+        ),
+      };
+    }
     case "settings/update":
       return { ...state, settings: { ...state.settings, ...action.patch } };
     case "reset":
@@ -93,7 +171,7 @@ function reducer(state: AppState, action: Action): AppState {
 /* ---------- 持久化 ---------- */
 
 /* 从旧版（photo.album 字符串 / 缺 albums 字段）迁移到新版（albumId + albums 数组） */
-function migrate(state: AppState): AppState {
+function migrateAlbums(state: AppState): AppState {
   const photos = Array.isArray(state.photos) ? state.photos : [];
 
   // 1. 旧字段 photo.album（字符串）→ albumId + 按名称生成相册
@@ -121,7 +199,6 @@ function migrate(state: AppState): AppState {
     return {...state, albums, photos: migratedPhotos};
   }
 
-  // 2. 已有 albumId 但缺 albums 字段 → 兜底保证 albums 存在
   if (!Array.isArray(state.albums)) {
     const albumIdByName = new Map<string, string>();
     const albums: Album[] = [];
@@ -139,13 +216,28 @@ function migrate(state: AppState): AppState {
   return state;
 }
 
+/* 新版字段（albums / moments）缺失时一律兜底为空数组，避免 .map 崩undefined */
+function migrate(state: AppState): AppState {
+  const next = migrateAlbums(state);
+  return {
+    ...next,
+    albums: Array.isArray(next.albums) ? next.albums : [],
+    moments: Array.isArray(next.moments) ? next.moments : [],
+  };
+}
+
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as AppState;
       if (Array.isArray(parsed.posts)) {
-        return migrate(parsed);
+        const migrated = migrate(parsed);
+        // 旧版数据缺后加的字段（如 username/avatar）时用种子值兜底
+        return {
+          ...migrated,
+          settings: { ...seedState.settings, ...migrated.settings },
+        };
       }
     }
   } catch {
@@ -274,6 +366,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deletePhoto: (id) => {
         dispatch({ type: "photo/delete", id });
         notify("照片已删除");
+      },
+      addMoment: (input) => {
+        dispatch({
+          type: "moment/add",
+          moment: {
+            ...input,
+            comments: [],
+            likes: [],
+            id: `mo-${Date.now().toString(36)}`,
+            createdAt: new Date().toISOString(),
+          },
+        });
+        notify("动态已发布");
+      },
+      deleteMoment: (id) => {
+        dispatch({ type: "moment/delete", id });
+        notify("动态已删除");
+      },
+      toggleMomentLike: (id, user) => dispatch({ type: "moment/toggleLike", id, user }),
+      addMomentComment: (id, comment) => {
+        dispatch({
+          type: "moment/comment/add",
+          id,
+          comment: {
+            ...comment,
+            id: `mc-${Date.now().toString(36)}`,
+            createdAt: new Date().toISOString(),
+          },
+        });
+      },
+      deleteMomentComment: (id, commentId) => {
+        dispatch({ type: "moment/comment/delete", id, commentId });
+        notify("评论已删除");
       },
       updateSettings: (patch) => {
         dispatch({ type: "settings/update", patch });

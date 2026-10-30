@@ -11,7 +11,7 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] })
   ],
   server: {
-    watcher: {
+    watch: {
       ignored: ['**/.workbuddy/**'],
     },
   },

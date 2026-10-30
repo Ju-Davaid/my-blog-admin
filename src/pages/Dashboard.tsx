@@ -117,7 +117,7 @@ export default function Dashboard() {
               : new Date().getHours() < 18
                 ? "Good Afternoon"
                 : "Good Evening"}
-            , DAVAID
+            , {state.settings.username?.trim() || "DAVAID"}
           </p>
           <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
             今天也留下一点痕迹<span className="text-ember">。</span>

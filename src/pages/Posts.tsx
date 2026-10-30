@@ -20,7 +20,7 @@ export default function Posts() {
   const [sort, setSort] = useState<"updated" | "views">("updated");
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
 
   const commentCount = useMemo(() => {
     const map: Record<string, number> = {};
@@ -38,8 +38,7 @@ export default function Posts() {
       .filter((p) =>
         kw
           ? p.title.toLowerCase().includes(kw) ||
-            p.excerpt.toLowerCase().includes(kw) ||
-            p.slug.toLowerCase().includes(kw)
+            p.desc.toLowerCase().includes(kw)
           : true,
       )
       .sort((a, b) =>
@@ -91,9 +90,6 @@ export default function Posts() {
             />
             <span className="truncate">{p.title}</span>
           </Link>
-          <div className="mt-0.5 truncate pl-4 font-display text-[11px] text-ash">
-            /{p.slug}
-          </div>
         </div>
       ),
     },

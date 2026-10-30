@@ -1,7 +1,8 @@
 import { ArrowLeft, ImagePlus, Save, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { MdEditor } from "md-editor-rt";
+import { Input, Select, type InputRef } from "antd";
+import { MdEditor, type UploadImgCallBack } from "md-editor-rt";
 import "md-editor-rt/lib/style.css";
 import {
   Badge,
@@ -11,34 +12,11 @@ import {
   ConfirmDialog,
   Field,
   IconButton,
-  Select,
   TextArea,
-  TextInput,
 } from "../components/ui";
 import { useStore } from "../data/hooks";
 import { useTheme } from "../theme/useTheme";
-import { slugify } from "../utils/slug";
 import type { Post, PostStatus } from "../types";
-
-const STARTER = `## 先写一句最重要的话
-
-把读者当成深夜便利店遇到的陌生人——尊重他的时间，说人话。
-
-> 引言块：一句可以被单独转发的话。
-
-## 正文
-
-- 论点一
-- 论点二
-
-\`\`\`ts
-// 代码块
-\`\`\`
-
-## 结尾
-
-收个尾，留个钩子。
-`;
 
 function blankPost(): Omit<
   Post,
@@ -46,13 +24,11 @@ function blankPost(): Omit<
 > {
   return {
     title: "",
-    slug: "",
-    excerpt: "",
-    content: STARTER,
+    desc: "",
+    content: "",
     categoryId: "cat-code",
     tagIds: [],
     status: "draft",
-    hue: 18,
     cover: undefined,
   };
 }
@@ -66,31 +42,30 @@ function EditorForm({ existing }: { existing: Post | null }) {
     ...(existing
       ? {
           title: existing.title,
-          slug: existing.slug,
-          excerpt: existing.excerpt,
+          desc: existing.desc,
           content: existing.content,
           categoryId: existing.categoryId,
           tagIds: existing.tagIds,
           status: existing.status,
-          hue: existing.hue,
           cover: existing.cover,
         }
       : {}),
   }));
-  const [slugTouched, setSlugTouched] = useState(!!existing);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<InputRef>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  // 文章内容字符数
   const charCount = useMemo(
     () => form.content.replace(/\s/g, "").length,
     [form.content],
   );
 
+  // 保存文章
   const save = () => {
     if (!form.title.trim()) {
       setError("标题不能为空");
@@ -101,32 +76,27 @@ function EditorForm({ existing }: { existing: Post | null }) {
     const post: Post = {
       id: existing?.id ?? `p-${Date.now().toString(36)}`,
       title: form.title.trim(),
-      slug:
-        form.slug.trim() ||
-        slugify(form.title) ||
-        `post-${Date.now().toString(36)}`,
-      excerpt:
-        form.excerpt.trim() ||
-        form.content
-          .replace(/[#>*`[\]()\\-]/g, "")
-          .slice(0, 80)
-          .trim(),
+      desc: form.desc.trim(),
       content: form.content,
       categoryId: form.categoryId,
       tagIds: form.tagIds,
       status: form.status,
-      hue: form.hue,
       cover: form.cover,
       views: existing?.views ?? 0,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
-      publishedAt:
-        form.status === "published" ? (existing?.publishedAt ?? now) : null,
     };
     savePost(post);
-    navigate("/posts");
   };
 
+  const onUploadImg = (files: Array<File>, callBack: UploadImgCallBack) => {
+    console.log("上传图片", files);
+    // 模拟上传图片
+    setTimeout(() => {
+      const url = URL.createObjectURL(files[0]);
+      callBack([{ url, alt: "", title: "" }]);
+    }, 1000);
+  };
   const toggleTag = (id: string) =>
     set(
       "tagIds",
@@ -214,24 +184,26 @@ function EditorForm({ existing }: { existing: Post | null }) {
         {/* ===== 主编辑区（左，占 2 栏） ===== */}
         <div className="space-y-5 lg:col-span-2">
           <Card className="reveal reveal-1">
-            <input
-              ref={titleRef}
-              value={form.title}
-              onChange={(e) => {
-                set("title", e.target.value);
-                if (!slugTouched) set("slug", slugify(e.target.value));
-              }}
-              placeholder="文章标题"
-              aria-label="文章标题"
-              className="w-full border-b border-line bg-transparent px-5 py-4 font-display text-xl font-bold tracking-tight text-cream placeholder:text-ash focus:border-ember focus:outline-none"
-            />
+            <div className="border-b border-line px-2 transition-colors focus-within:border-ember">
+              <Input
+                ref={titleRef}
+                variant="borderless"
+                size="large"
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+                placeholder="文章标题"
+                aria-label="文章标题"
+                className="py-2.5! text-xl! font-bold!"
+              />
+            </div>
             <TextArea
-              value={form.excerpt}
-              onChange={(e) => set("excerpt", e.target.value)}
+              value={form.desc}
+              onChange={(e) => set("desc", e.target.value)}
+              maxLength={200}
               placeholder="摘要（可选）—— 一句话说明这篇文章为什么值得读"
               aria-label="文章摘要"
               rows={2}
-              className="border-0 bg-transparent text-[13px] text-fog placeholder:text-ash focus:border-transparent"
+              className="border-0 bg-transparent text-[13px] text-fog placeholder:text-ash focus:border-transparent resize-none"
             />
           </Card>
 
@@ -247,9 +219,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
             <MdEditor
               value={form.content}
               onChange={(v) => set("content", v)}
-              onUploadImg={(e) => {
-                console.log("上传图片", e);
-              }}
+              onUploadImg={onUploadImg}
               language="zh-CN"
               theme={mode === "dark" ? "dark" : "light"}
               previewTheme={mode === "dark" ? "github-dark" : "github"}
@@ -264,30 +234,18 @@ function EditorForm({ existing }: { existing: Post | null }) {
         {/* ===== 侧栏（右） ===== */}
         <div className="space-y-5">
           <Card className="reveal reveal-3 p-4">
-            <Field label="Slug" hint="访问路径：davaid.site/post/…">
-              <TextInput
-                value={form.slug}
-                onChange={(e) => {
-                  setSlugTouched(true);
-                  set("slug", slugify(e.target.value));
-                }}
-                placeholder="url-slug"
-                aria-label="文章 slug"
-              />
-            </Field>
             <div className="mt-4">
               <Field label="分类">
                 <Select
                   value={form.categoryId}
-                  onChange={(e) => set("categoryId", e.target.value)}
+                  onChange={(v) => set("categoryId", v)}
+                  options={state.categories.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  }))}
+                  style={{ width: "100%" }}
                   aria-label="选择分类"
-                >
-                  {state.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+                />
               </Field>
             </div>
           </Card>
@@ -350,7 +308,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
                   <div className="absolute inset-0 flex items-center justify-center gap-2 bg-ink/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => coverInputRef.current?.click()}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-white/90 px-3 py-1.5 text-[12px] font-medium text-ink transition-transform hover:scale-105"
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-white/90 px-3 py-1.5 text-[12px] font-medium text-black transition-transform hover:scale-105"
                     >
                       <ImagePlus size={14} /> 更换
                     </button>
@@ -361,13 +319,6 @@ function EditorForm({ existing }: { existing: Post | null }) {
                       <X size={14} /> 移除
                     </button>
                   </div>
-                  <button
-                    onClick={clearCover}
-                    aria-label="移除封面"
-                    className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md bg-ink/60 text-white opacity-0 transition-opacity hover:bg-ruby group-hover:opacity-100"
-                  >
-                    <X size={14} />
-                  </button>
                 </div>
               ) : (
                 <button

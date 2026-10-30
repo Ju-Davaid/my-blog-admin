@@ -1,4 +1,94 @@
-import type { AppState } from "../types";
+import type { AppState, Moment } from "../types";
+
+/* 演示用动态配图：稳定渐变 SVG，不依赖外部网络 */
+function art(seed: string, w = 800, h = 800) {
+  let n = 0;
+  for (let i = 0; i < seed.length; i += 1) n = (n * 31 + seed.charCodeAt(i)) % 360;
+  const h1 = n;
+  const h2 = (n + 52) % 360;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0" stop-color="hsl(${h1} 36% 44%)"/>` +
+    `<stop offset="0.55" stop-color="hsl(${h2} 30% 27%)"/>` +
+    `<stop offset="1" stop-color="hsl(${h1} 44% 15%)"/>` +
+    `</linearGradient></defs>` +
+    `<rect width="${w}" height="${h}" fill="url(#g)"/>` +
+    `<circle cx="${Math.round(w * 0.76)}" cy="${Math.round(h * 0.22)}" r="${Math.round(h * 0.26)}" fill="hsl(${h2} 74% 78%)" opacity="0.18"/>` +
+    `<circle cx="${Math.round(w * 0.2)}" cy="${Math.round(h * 0.82)}" r="${Math.round(h * 0.3)}" fill="hsl(${h1} 70% 64%)" opacity="0.13"/>` +
+    `</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+const shots = (base: string, n: number) =>
+  Array.from({ length: n }, (_, i) => art(`${base}-${i}`));
+
+function buildMoments(): Moment[] {
+  return [
+    {
+      id: "mo6",
+      content: "把博客后台整套换成了新的蓝调主题，配色终于不用再跟灰魔鬼打交道了。写前端的人，最后都会被自己的审美追着跑。",
+      images: [],
+      createdAt: "2026-10-29T21:40:00",
+      likes: ["老白", "nullptr", "胶片盒"],
+      comments: [
+        { id: "mo6-c1", author: "老白", content: "早该换了，之前那个配色我看一次眼疼一次。", createdAt: "2026-10-29T22:05:00" },
+        { id: "mo6-c2", author: "DAVAID", content: "收到，下次换之前先发给你把把关。", createdAt: "2026-10-29T22:31:00", isAdmin: true, parentId: "mo6-c1" },
+      ],
+    },
+    {
+      id: "mo5",
+      content: "祁连山 Day 3：海拔四千米，风比人先说话。经幡被吹成直线的那一刻，突然明白为什么有人一年要跑好几趟高原。",
+      images: shots("qilian", 6),
+      createdAt: "2026-10-27T09:12:00",
+      location: "青海 · 祁连",
+      likes: ["山风", "阿棠", "Kira", "胶片盒", "nullptr"],
+      comments: [
+        { id: "mo5-c1", author: "山风", content: "求路线！明年夏天也想走一遍。", createdAt: "2026-10-27T10:02:00" },
+        { id: "mo5-c2", author: "DAVAID", content: "回头整理一篇单独的文章发出来，比这里说得细。", createdAt: "2026-10-27T11:20:00", isAdmin: true, parentId: "mo5-c1" },
+      ],
+    },
+    {
+      id: "mo4",
+      content: "深夜便利店的第二个关东煮是免费的——店员说今天做多了。城市的温柔常常藏在四舍五入里。",
+      images: shots("night", 1),
+      createdAt: "2026-10-24T23:58:00",
+      location: "成都 · 玉林",
+      likes: ["阿棠", "Kira"],
+      comments: [],
+    },
+    {
+      id: "mo3",
+      content: "扫街两卷，挑出九张还能看的。失败率依然高得离谱，但总有一格光是替我等在那里的。",
+      images: shots("street", 9),
+      createdAt: "2026-10-18T16:20:00",
+      likes: ["胶片盒", "老白"],
+      comments: [
+        { id: "mo3-c1", author: "胶片盒", content: "三十六分之四的出片率已经很好了，我上次两卷能看的只有三张……", createdAt: "2026-10-18T17:05:00" },
+      ],
+    },
+    {
+      id: "mo2",
+      content: "重读《活着》。年轻时读觉得苦，现在读到的是「合伙」两个字——人和自己的命运达成合伙，账才做得下去。",
+      images: shots("book", 3),
+      createdAt: "2026-10-11T22:35:00",
+      likes: ["阿棠"],
+      comments: [
+        { id: "mo2-c1", author: "阿棠", content: "这句话让我把书重新加入了购物车。", createdAt: "2026-10-12T08:40:00" },
+        { id: "mo2-c2", author: "DAVAID", content: "那就别拖，拿来读。", createdAt: "2026-10-12T09:15:00", isAdmin: true, parentId: "mo2-c1" },
+      ],
+    },
+    {
+      id: "mo1",
+      content: "窗台上的猫每天下午三点准时到达，比任何日程提醒都准。今天它把尾巴搭在了我的键盘上，于是这条动态是它帮我发的。",
+      images: shots("cat", 4),
+      createdAt: "2026-10-05T15:03:00",
+      location: "家里",
+      likes: ["Kira", "nullptr", "山风"],
+      comments: [],
+    },
+  ];
+}
 
 /* 可复现的伪随机（种子数据稳定，不做真随机） */
 function mulberry32(seed: number) {
@@ -42,6 +132,8 @@ export const seedState: AppState = {
     icp: "蜀ICP备2024000000号-1",
     github: "https://github.com/davaid",
     email: "hi@davaid.site",
+    username: "DAVAID",
+    avatar: "",
   },
   categories: [
     { id: "cat-code", name: "代码", slug: "code", description: "写不完的代码，填不完的坑" },
@@ -62,8 +154,7 @@ export const seedState: AppState = {
     {
       id: "p1",
       title: "把博客从 WordPress 搬到 Vite 的第七天",
-      slug: "wordpress-to-vite-day-7",
-      excerpt:
+      desc:
         "迁移比想象顺利，也比想象麻烦。这篇文章记录从 PHP 模板到 React 组件之间的所有落差，以及我为什么觉得值。",
       content: `## 为什么要搬
 
@@ -98,17 +189,14 @@ export default defineConfig({
       categoryId: "cat-code",
       tagIds: ["tag-vite", "tag-react", "tag-tailwind"],
       status: "published",
-      hue: 18,
       views: 3241,
       createdAt: "2026-09-18T21:30:00",
       updatedAt: "2026-10-02T22:10:00",
-      publishedAt: "2026-09-19T09:00:00",
     },
     {
       id: "p2",
       title: "React 19 的 Compiler 到底替我省了什么",
-      slug: "what-react-compiler-saves",
-      excerpt:
+      desc:
         "手动 memo 的日子到头了吗？实测了一个中等复杂度的项目，结论比官方文档诚实一点。",
       content: `## 先说结论
 
@@ -142,17 +230,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-code",
       tagIds: ["tag-react", "tag-ts"],
       status: "published",
-      hue: 195,
       views: 2867,
       createdAt: "2026-08-30T20:00:00",
       updatedAt: "2026-09-05T10:40:00",
-      publishedAt: "2026-08-31T08:30:00",
     },
     {
       id: "p3",
       title: "黑白胶片：一次失败的扫街",
-      slug: "failed-street-shot-on-film",
-      excerpt:
+      desc:
         "三十六张底片，冲出来能看的只有四张。但 failure 是胶片的一部分，也是扫街的一部分。",
       content: `## 失败统计
 
@@ -176,17 +261,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-photo",
       tagIds: ["tag-film", "tag-bw"],
       status: "published",
-      hue: 220,
       views: 1543,
       createdAt: "2026-09-26T18:20:00",
       updatedAt: "2026-09-27T09:15:00",
-      publishedAt: "2026-09-27T10:00:00",
     },
     {
       id: "p4",
       title: "在祁连山看日出，风把云吹成了河",
-      slug: "qilian-mountain-sunrise",
-      excerpt:
+      desc:
         "海拔四千米，凌晨五点，零下六度。等一场日出值不值？值。照片拍出来值不值？另一回事。",
       content: `## 凌晨四点的出发
 
@@ -204,17 +286,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-photo",
       tagIds: ["tag-life", "tag-bw"],
       status: "published",
-      hue: 35,
       views: 1988,
       createdAt: "2026-08-12T22:00:00",
       updatedAt: "2026-08-14T19:30:00",
-      publishedAt: "2026-08-13T11:00:00",
     },
     {
       id: "p5",
       title: "重读《活着》：这一次注意到的是牛",
-      slug: "rereading-to-live",
-      excerpt:
+      desc:
         "十年前读福贵，读到的是惨。这次读，读到的是田埂上那头老牛的名字。",
       content: `## 十年两读
 
@@ -236,17 +315,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-essay",
       tagIds: ["tag-book", "tag-life"],
       status: "published",
-      hue: 28,
       views: 2310,
       createdAt: "2026-07-20T21:00:00",
       updatedAt: "2026-07-22T23:00:00",
-      publishedAt: "2026-07-21T09:30:00",
     },
     {
       id: "p6",
       title: "Tailwind CSS 4 升级手记：比想象顺，比文档乱",
-      slug: "tailwind-v4-upgrade-notes",
-      excerpt:
+      desc:
         "从 v3 升 v4 用了一个晚上。@theme 的设计是对的，但迁移指南把三件事讲成了一件。",
       content: `## 一句话总结
 
@@ -277,17 +353,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-code",
       tagIds: ["tag-tailwind", "tag-vite"],
       status: "draft",
-      hue: 200,
       views: 0,
       createdAt: "2026-10-20T23:30:00",
       updatedAt: "2026-10-25T01:12:00",
-      publishedAt: null,
     },
     {
       id: "p7",
       title: "深夜食堂与泡面：碳水化合物的安慰剂效应",
-      slug: "midnight-instant-noodles",
-      excerpt: "加班到十一点，泡面五分钟。这五分钟里获得的东西，营养表上没有。",
+      desc: "加班到十一点，泡面五分钟。这五分钟里获得的东西，营养表上没有。",
       content: `## 一个观察
 
 楼下便利店的泡面货架，晚上十点半之后销量是白天的三倍。买的人眼睛里都是同一种东西——**今天快结束了**。
@@ -307,17 +380,14 @@ const handlePick = (id: string) => { ... };
       categoryId: "cat-essay",
       tagIds: ["tag-life"],
       status: "published",
-      hue: 120,
       views: 4120,
       createdAt: "2026-06-15T23:40:00",
       updatedAt: "2026-06-16T00:30:00",
-      publishedAt: "2026-06-16T08:00:00",
     },
     {
       id: "p8",
       title: "用 Three.js 做一个不卡的粒子背景",
-      slug: "threejs-particle-background",
-      excerpt:
+      desc:
         "博客首页那个粒子背景是怎么做的：3000 个粒子、一次 draw call、零 GC 分配，以及为什么不用现成库。",
       content: `## 目标
 
@@ -351,11 +421,9 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       categoryId: "cat-code",
       tagIds: ["tag-react"],
       status: "draft",
-      hue: 265,
       views: 0,
       createdAt: "2026-10-26T22:00:00",
       updatedAt: "2026-10-28T23:45:00",
-      publishedAt: null,
     },
   ],
   comments: [
@@ -375,6 +443,26 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       content: "中文 slug 那个点太真实了，当年纠结了两周，最后也是直接上了。",
       status: "approved",
       createdAt: "2026-09-21T09:03:00",
+    },
+    {
+      id: "c1-r1",
+      postId: "p1",
+      author: "DAVAID",
+      content: "重写主题这事我也干过三次，最后还是回到「够用就好」。工具得服从手，不然就是给自己上刑。",
+      status: "approved",
+      createdAt: "2026-09-20T19:05:00",
+      isAdmin: true,
+      parentId: "c1",
+    },
+    {
+      id: "c1-r2",
+      postId: "p1",
+      author: "DAVAID",
+      content: "顺便说一句，迁移那周我每天只搬一篇文章，搬完刚好七天——慢一点真的会少踩坑。",
+      status: "approved",
+      createdAt: "2026-09-21T10:12:00",
+      isAdmin: true,
+      parentId: "c1",
     },
     {
       id: "c3",
@@ -424,14 +512,15 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     { id: "al-film", name: "胶片", description: "HP5+ / 过期胶卷的颗粒", createdAt: "2026-09-20T00:00:00" },
   ],
   photos: [
-    { id: "ph1", title: "修鞋匠的灯", albumId: "al-street", caption: "傍晚六点半，钨丝灯亮起的瞬间", hue: 35, takenAt: "2026-09-26" },
-    { id: "ph2", title: "雨后的斑马线", albumId: "al-street", caption: "积水把红绿灯借给了地面", hue: 200, takenAt: "2026-09-12" },
-    { id: "ph3", title: "祁连日出", albumId: "al-land", caption: "云被风从固体吹成了流体", hue: 22, takenAt: "2026-08-13" },
-    { id: "ph4", title: "垭口的经幡", albumId: "al-land", caption: "海拔四千米，风比人先说话", hue: 275, takenAt: "2026-08-12" },
-    { id: "ph5", title: "窗台上的猫", albumId: "al-daily", caption: "它每天准时在下午三点到达", hue: 45, takenAt: "2026-10-05" },
-    { id: "ph6", title: "深夜便利店", albumId: "al-daily", caption: "城市最后的温柔是二十四小时的", hue: 160, takenAt: "2026-10-15" },
-    { id: "ph7", title: "巷口的自行车", albumId: "al-film", caption: "HP5+ 按 800  pushed 两档", hue: 220, takenAt: "2026-09-26" },
-    { id: "ph8", title: "奶奶的旧木柜", albumId: "al-film", caption: "五十年前的漆光还在", hue: 30, takenAt: "2026-10-20" },
+    { id: "ph1", title: "修鞋匠的灯", albumId: "al-street", takenAt: "2026-09-26" },
+    { id: "ph2", title: "雨后的斑马线", albumId: "al-street", takenAt: "2026-09-12" },
+    { id: "ph3", title: "祁连日出", albumId: "al-land", takenAt: "2026-08-13" },
+    { id: "ph4", title: "垭口的经幡", albumId: "al-land", takenAt: "2026-08-12" },
+    { id: "ph5", title: "窗台上的猫", albumId: "al-daily", takenAt: "2026-10-05" },
+    { id: "ph6", title: "深夜便利店", albumId: "al-daily", takenAt: "2026-10-15" },
+    { id: "ph7", title: "巷口的自行车", albumId: "al-film", takenAt: "2026-09-26" },
+    { id: "ph8", title: "奶奶的旧木柜", albumId: "al-film", takenAt: "2026-10-20" },
   ],
   traffic: buildTraffic(),
+  moments: buildMoments(),
 };
