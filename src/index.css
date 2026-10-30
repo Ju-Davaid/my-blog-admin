@@ -1,0 +1,303 @@
+@import "tailwindcss";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/inter-tight/400.css";
+@import "@fontsource/inter-tight/500.css";
+@import "@fontsource/inter-tight/600.css";
+
+/* ============================================================
+   DAVAID · BLOG CONSOLE — 设计令牌
+   亮 / 暗双主题：语义令牌引用运行时变量，.dark 一键切换
+   亮色：交易所风格后台（白顶栏 + 浅灰蓝底 + 若依蓝）
+   暗色：GitHub Dark 同族深墨蓝 + 若依蓝提亮
+   ============================================================ */
+
+@theme inline {
+  --color-ink: var(--tk-ink);
+  --color-surface: var(--tk-surface);
+  --color-raised: var(--tk-raised);
+  --color-overlay: var(--tk-overlay);
+  --color-line: var(--tk-line);
+  --color-line-strong: var(--tk-line-strong);
+  --color-cream: var(--tk-cream);
+  --color-fog: var(--tk-fog);
+  --color-ash: var(--tk-ash);
+  --color-ember: var(--tk-ember);
+  --color-ember-dim: var(--tk-ember-dim);
+  --color-moss: var(--tk-moss);
+  --color-gold: var(--tk-gold);
+  --color-ruby: var(--tk-ruby);
+  --color-haze: var(--tk-haze);
+
+  --font-display: "Inter Tight", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body: "Inter Tight", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- 亮色（默认） ---------- */
+:root {
+  --tk-ink: #f0f2f5;
+  --tk-surface: #ffffff;
+  --tk-raised: #f7f8fa;
+  --tk-overlay: #ffffff;
+  --tk-line: #e8eaed;
+  --tk-line-strong: #d9dde3;
+  --tk-cream: #1f2329;
+  --tk-fog: #646a73;
+  --tk-ash: #8f959e;
+  --tk-ember: #409eff;
+  --tk-ember-dim: rgba(64, 158, 255, 0.1);
+  --tk-moss: #67c23a;
+  --tk-gold: #e6a23c;
+  --tk-ruby: #f56c6c;
+  --tk-haze: #409eff;
+  --tk-scrollbar: #c9cdd4;
+  --tk-scrollbar-hover: #a9aeb8;
+  --tk-pre-bg: #f7f8fa;
+  --tk-shadow: rgba(31, 35, 41, 0.04);
+  color-scheme: light;
+}
+
+/* ---------- 暗色（GitHub Dark 同族 × 若依蓝） ---------- */
+.dark {
+  --tk-ink: #0d1117;
+  --tk-surface: #161b22;
+  --tk-raised: #1c2129;
+  --tk-overlay: #21262d;
+  --tk-line: #2d333b;
+  --tk-line-strong: #3d444d;
+  --tk-cream: #e6edf3;
+  --tk-fog: #9198a1;
+  --tk-ash: #656d76;
+  --tk-ember: #409eff;
+  --tk-ember-dim: rgba(64, 158, 255, 0.16);
+  --tk-moss: #85cf60;
+  --tk-gold: #dfb14d;
+  --tk-ruby: #f78989;
+  --tk-haze: #66b1ff;
+  --tk-scrollbar: #3d444d;
+  --tk-scrollbar-hover: #57606a;
+  --tk-pre-bg: #0d1117;
+  --tk-shadow: rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+/* ---------- 基础 ---------- */
+
+body {
+  @apply bg-ink text-cream font-body antialiased;
+  font-size: 14px;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-ember);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tk-scrollbar);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tk-scrollbar-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 等宽数字，数据列对齐 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- 白卡片阴影（替代暗色边框语言） ---------- */
+
+.card-shadow {
+  box-shadow: 0 1px 2px var(--tk-shadow), 0 2px 8px var(--tk-shadow);
+}
+
+/* ---------- 入场序列（错峰） ---------- */
+
+/* 入场动画不用 forwards 填充：
+   fill-forwards 会让 Chrome 永久保持动画活性 →
+   transform 撑出包含块（锁死 fixed 全屏编辑器）、
+   opacity 撑出堆叠上下文（侧栏盖住全屏层）。
+   只写 from，to 取基态，结束即回归无动画状态 */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.reveal {
+  animation: rise 0.55s var(--ease-out);
+}
+.reveal-1 { animation-delay: 0.05s; }
+.reveal-2 { animation-delay: 0.11s; }
+.reveal-3 { animation-delay: 0.17s; }
+.reveal-4 { animation-delay: 0.23s; }
+.reveal-5 { animation-delay: 0.29s; }
+.reveal-6 { animation-delay: 0.35s; }
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toast-in 0.28s var(--ease-out) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+/* ---------- Markdown 预览排版 ---------- */
+
+.md-body {
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--color-fog);
+  overflow-wrap: break-word;
+}
+.md-body p {
+  margin: 0.6em 0;
+}
+.md-body .md-h2 {
+  margin: 1.4em 0 0.5em;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-cream);
+  letter-spacing: -0.01em;
+}
+.md-body .md-h2::before {
+  content: "## ";
+  color: var(--color-ember);
+}
+.md-body .md-h3 {
+  margin: 1.2em 0 0.4em;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-cream);
+}
+.md-body .md-h3::before {
+  content: "### ";
+  color: var(--color-ember);
+  font-size: 11px;
+}
+.md-body .md-h1,
+.md-body .md-h4 {
+  margin: 1.2em 0 0.4em;
+  font-weight: 700;
+  color: var(--color-cream);
+}
+.md-body strong {
+  color: var(--color-cream);
+  font-weight: 600;
+}
+.md-body .md-code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.88em;
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  color: var(--color-ember);
+}
+.md-body .md-pre {
+  margin: 0.9em 0;
+  padding: 12px 14px;
+  background: var(--tk-pre-bg);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.md-body .md-pre code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-cream);
+}
+.md-body .md-quote {
+  margin: 0.9em 0;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--color-ember);
+  color: var(--color-cream);
+  font-style: italic;
+}
+.md-body .md-list {
+  margin: 0.6em 0;
+  padding-left: 1.4em;
+}
+.md-body .md-list li {
+  margin: 0.25em 0;
+}
+.md-body .md-list li::marker {
+  color: var(--color-ember);
+}
+.md-body .md-link {
+  color: var(--color-ember);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.md-body .md-link:hover {
+  color: var(--tk-haze);
+}
+
+/* ---------- md-editor-rt 主题变量对齐 ----------
+   暗色主题下编辑器默认用纯黑 #000 背景，与页面 #161b22 卡片不协调。
+   用更高特异性选择器覆盖其 CSS 变量，与全局暗色令牌保持一致 */
+.md-editor-root.md-editor[data-theme="dark"] {
+  --md-bk-color: #161b22;          /* 对齐卡片面 surface */
+  --md-bk-color-outstand: #1c2129; /* 对齐抬升面 raised */
+  --md-bk-hover-color: #21262d;    /* 对齐悬浮面 overlay */
+  --md-border-color: #2d333b;      /* 对齐边框 line */
+  --md-border-hover-color: #3d444d;
+  --md-border-active-color: #409eff;
+  --md-color: #9198a1;             /* 默认文字：次要文字 fog */
+  --md-hover-color: #e6edf3;       /* 悬停/标题：主文字 cream */
+  --md-scrollbar-bg-color: #0d1117;
+  --md-scrollbar-thumb-color: #3d444d;
+  --md-scrollbar-thumb-hover-color: #57606a;
+}
+
+/* ---------- 降级动效 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .toast-in,
+  .fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
