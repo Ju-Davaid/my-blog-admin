@@ -16,25 +16,15 @@ import {
 } from "@/components/ui";
 import { useTheme } from "@/theme/useTheme";
 import { seedState } from "@/data/seed";
-import type { Category, Post, PostStatus, Tag } from "@/types";
-import { uploadFile } from "@/api";
+import { type Category, type Post, type Tag, PostStatus } from "@/types";
+import { createOrUpdatePost, getPostById, uploadFile } from "@/api";
+import { useEffect } from "react";
 
-function blankPost(): Omit<
-  Post,
-  "id" | "createdAt" | "updatedAt" | "publishedAt" | "views"
-> {
-  return {
-    title: "",
-    desc: "",
-    content: "",
-    categoryId: null,
-    tagIds: [],
-    status: "draft",
-    cover: "",
-  };
+interface EditorProps {
+  isCreate?: boolean;
 }
 
-function EditorForm({ existing }: { existing: Post | null }) {
+function EditorForm({ isCreate = false }: EditorProps) {
   const { mode } = useTheme();
   const navigate = useNavigate();
 
@@ -42,25 +32,22 @@ function EditorForm({ existing }: { existing: Post | null }) {
   const [categories] = useState<Category[]>(seedState.categories);
   const [tags] = useState<Tag[]>(seedState.tags);
 
-  const [form, setForm] = useState(() => ({
-    ...blankPost(),
-    ...(existing
-      ? {
-          title: existing.title,
-          desc: existing.desc,
-          content: existing.content,
-          categoryId: existing.categoryId,
-          tagIds: existing.tagIds,
-          status: existing.status,
-          cover: existing.cover,
-        }
-      : {}),
-  }));
+  const [form, setForm] = useState<Post>({
+    title: "",
+    desc: "",
+    content: "",
+    categoryId: null,
+    tagIds: [],
+    status: PostStatus.Draft,
+    cover: "",
+    views: 0,
+  });
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const titleRef = useRef<InputRef>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // 设置表单值
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
@@ -71,27 +58,22 @@ function EditorForm({ existing }: { existing: Post | null }) {
   );
 
   // 保存文章
-  const save = () => {
+  const save = async () => {
     if (!form.title.trim()) {
       setError("标题不能为空");
       titleRef.current?.focus();
       return;
     }
-    const now = new Date().toISOString();
-    const post: Post = {
-      id: existing?.id ?? `p-${Date.now().toString(36)}`,
-      title: form.title.trim(),
-      desc: form.desc.trim(),
+    console.log("保存文章", form);
+    await createOrUpdatePost({
+      title: form.title,
+      desc: form.desc,
       content: form.content,
       categoryId: form.categoryId,
-      tagIds: form.tagIds,
+      tagIds: form.tagIds.join(","),
       status: form.status,
       cover: form.cover,
-      views: existing?.views ?? 0,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    };
-    console.log("保存文章", post);
+    });
   };
 
   // 上传图片
@@ -117,6 +99,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
     );
     callBack(urls);
   };
+  // 切换标签
   const toggleTag = (id: number) =>
     set(
       "tagIds",
@@ -125,15 +108,14 @@ function EditorForm({ existing }: { existing: Post | null }) {
         : [...(form.tagIds ?? []), id],
     );
 
-  const pickCover = (files: FileList | null) => {
+  const pickCover = async (files: FileList | null) => {
     const f = files?.[0];
     if (!f || !f.type.startsWith("image/")) return;
-    const url = URL.createObjectURL(f);
-    set("cover", url);
+    const res = await uploadFile(f);
+    set("cover", res.data.url);
   };
 
   const clearCover = () => {
-    if (form.cover) URL.revokeObjectURL(form.cover);
     set("cover", "");
   };
 
@@ -155,8 +137,8 @@ function EditorForm({ existing }: { existing: Post | null }) {
           >
             {(
               [
-                { v: "draft", label: "草稿" },
-                { v: "published", label: "发布" },
+                { v: PostStatus.Draft, label: "草稿" },
+                { v: PostStatus.Published, label: "发布" },
               ] as { v: PostStatus; label: string }[]
             ).map(({ v, label }) => (
               <button
@@ -166,7 +148,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
                 onClick={() => set("status", v)}
                 className={`min-h-9.5 cursor-pointer px-4 font-display text-[12px] tracking-wider uppercase transition-colors ${
                   form.status === v
-                    ? v === "published"
+                    ? v === PostStatus.Published
                       ? "bg-ember font-bold text-white"
                       : "bg-overlay font-bold text-gold"
                     : "text-fog hover:text-cream"
@@ -176,7 +158,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
               </button>
             ))}
           </div>
-          {existing && (
+          {!isCreate && (
             <IconButton
               icon={Trash2}
               label="删除文章"
@@ -185,11 +167,11 @@ function EditorForm({ existing }: { existing: Post | null }) {
             />
           )}
           <Button icon={Save} onClick={save}>
-            {existing
-              ? "保存修改"
-              : form.status === "published"
+            {isCreate
+              ? "保存草稿"
+              : form.status === PostStatus.Published
                 ? "发布文章"
-                : "保存草稿"}
+                : "保存修改"}
           </Button>
         </div>
       </div>
@@ -355,11 +337,11 @@ function EditorForm({ existing }: { existing: Post | null }) {
             </Field>
           </Card>
 
-          {existing && (
+          {!isCreate && (
             <Card className="reveal reveal-4 p-4 font-display text-[11px] leading-relaxed text-ash">
-              <div>ID · {existing.id}</div>
-              <div>创建 · {existing.createdAt.slice(0, 10)}</div>
-              <div>浏览 · {existing.views.toLocaleString()}</div>
+              <div>ID · {form?.id ?? "草稿"}</div>
+              <div>创建 · {form?.createdAt?.toLocaleString()}</div>
+              <div>浏览 · {form?.views?.toLocaleString()}</div>
             </Card>
           )}
         </div>
@@ -368,7 +350,7 @@ function EditorForm({ existing }: { existing: Post | null }) {
       <ConfirmDialog
         open={confirmDelete}
         title="删除文章"
-        body={`确定删除《${existing?.title}》吗？相关评论会一并删除，此操作不可撤销。`}
+        body={`确定删除《${form?.title}》吗？相关评论会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => navigate("/posts")}
@@ -377,12 +359,23 @@ function EditorForm({ existing }: { existing: Post | null }) {
   );
 }
 
-export default function PostEditor() {
+export default function PostEditor({ isCreate = false }: EditorProps) {
   const { id } = useParams();
+  const [post, setPost] = useState<Post | null>(null);
 
-  const existing = null;
+  useEffect(() => {
+    if (!isCreate && id) {
+      try {
+        getPostById(id).then((res) => setPost(res.data));
+      } catch (error: any) {
+        console.error(error);
+      }
+    }
+  }, [isCreate, id]);
 
-  if (id && !existing) {
+  useEffect(() => {}, []);
+
+  if (id && !post) {
     return (
       <div className="reveal">
         <Card className="p-10 text-center">
@@ -401,5 +394,5 @@ export default function PostEditor() {
     );
   }
 
-  return <EditorForm key={id ?? "new"} existing={existing} />;
+  return <EditorForm key={id ?? "new"} isCreate />;
 }

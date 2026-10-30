@@ -1,19 +1,20 @@
-export type PostStatus = "published" | "draft";
+export enum PostStatus {
+  Draft,
+  Published,
+}
 
 export interface Post {
-  id: string;
+  id?: string;
   title: string;
   desc: string; // 摘要
   content: string; // Markdown
-  /** 分类 id（对应 Category.id） */
   categoryId: string | null;
-  /** 标签 id 列表（对应 Tag.id） */
   tagIds: number[];
   status: PostStatus;
   cover: string;
   views: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Category {

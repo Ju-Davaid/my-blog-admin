@@ -103,8 +103,13 @@ export function MomentCard({
         </div>
 
         <div className="min-w-0 flex-1">
+          {/* 作者名（朋友圈蓝色署名） */}
+          <p className="font-display text-[13px] font-bold text-[#409eff]">
+            {me}
+          </p>
+
           {/* 正文 */}
-          <p className="whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-cream">
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-cream">
             {moment.content}
           </p>
 

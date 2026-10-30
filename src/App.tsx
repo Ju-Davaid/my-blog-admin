@@ -14,7 +14,9 @@ import Moments from "./pages/Moments";
 import SettingsPage from "./pages/Settings";
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("davaid-admin-auth") === "1");
+  const [authed, setAuthed] = useState(
+    () => sessionStorage.getItem("davaid-admin-auth") === "1",
+  );
 
   if (!authed) {
     return (
@@ -34,7 +36,10 @@ export default function App() {
             <Route element={<Layout onLogout={() => setAuthed(false)} />}>
               <Route index element={<Dashboard />} />
               <Route path="/posts" element={<Posts />} />
-              <Route path="/posts/new" element={<PostEditor />} />
+              <Route
+                path="/posts/new"
+                element={<PostEditor isCreate={true} />}
+              />
               <Route path="/posts/:id" element={<PostEditor />} />
               <Route path="/taxonomy" element={<Taxonomy />} />
               <Route path="/photos" element={<Photos />} />
