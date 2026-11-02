@@ -70,8 +70,11 @@ export default function Login() {
     }
     setCaptcha(captchaData.data);
   };
+  /* 首屏拉取验证码：setState 放在 Promise 回调里，避免在 effect body 同步触发 */
   useEffect(() => {
-    handleGetCaptcha();
+    void getCaptcha({ width: 120, height: 40 })
+      .then((res) => setCaptcha(res.data))
+      .catch(() => message.error("验证码加载失败"));
   }, []);
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink px-4">

@@ -18,3 +18,5 @@ export const refreshCaptcha = ({
   request.get<ResposneVO<CaptchaVO>>(
     `/auth/refreshCaptcha?width=${width}&height=${height}&captchaKey=${captchaKey}`,
   );
+
+export const logout = () => request.post("/auth/logout");

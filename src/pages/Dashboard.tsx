@@ -19,11 +19,13 @@ import {
   EmptyState,
   StatusDot,
 } from "@/components/ui";
-import { seedState } from "../data/seed";
 import {
   PostStatus,
+  type Album,
   type CommentItem,
+  type Photo,
   type Post,
+  type Tag,
   type TrafficPoint,
 } from "@/types";
 import { formatNumber, timeAgo } from "@/utils/format";
@@ -95,11 +97,12 @@ export default function Dashboard() {
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
   const [posts] = useState<Post[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
-  const [photos] = useState(seedState.photos);
-  const [albums] = useState(seedState.albums);
-  const [categories] = useState(seedState.categories);
+  const [photos] = useState<Photo[]>([]);
+  const [albums] = useState<Album[]>([]);
+  /* Category 类型已移除，分类与标签统一用 Tag（后端 tag/list） */
+  const [categories] = useState<Tag[]>([]);
   const [traffic] = useState<TrafficPoint[]>([]);
-  const [username] = useState(seedState.settings.username || "DAVAID");
+  const [username] = useState("DAVAID");
 
   const published = posts.filter((p) => p.status === PostStatus.Published);
   const drafts = posts.filter((p) => p.status === PostStatus.Draft);
@@ -240,8 +243,8 @@ export default function Dashboard() {
                       {p.title}
                     </div>
                     <div className="mt-0.5 truncate text-xs text-ash">
-                      {categories.find((c) => c.id === p.categoryId)?.name ??
-                        "未分类"}{" "}
+                      {categories.find((c) => String(c.id) === p.categoryId)
+                        ?.name ?? "未分类"}{" "}
                       · {timeAgo(p.updatedAt)}
                     </div>
                   </div>

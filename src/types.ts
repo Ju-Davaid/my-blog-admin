@@ -13,21 +13,13 @@ export interface Post {
   status: PostStatus;
   cover: string;
   views: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tag {
   id: number;
   name: string;
-  slug: string;
   hue: number;
 }
 
@@ -107,7 +99,6 @@ export interface TrafficPoint {
 export interface AppState {
   version: number;
   posts: Post[];
-  categories: Category[];
   tags: Tag[];
   comments: CommentItem[];
   albums: Album[];

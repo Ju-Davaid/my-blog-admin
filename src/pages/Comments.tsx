@@ -1,10 +1,24 @@
-import { Check, CornerDownRight, MessageSquare, RotateCcw, Send, Trash2, X } from "lucide-react";
+import {
+  Check,
+  CornerDownRight,
+  MessageSquare,
+  RotateCcw,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { App } from "antd";
 import { Reveal } from "../components/Reveal";
-import { Button, Card, ConfirmDialog, EmptyState, IconButton, TextInput } from "../components/ui";
-import { seedState } from "../data/seed";
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  IconButton,
+  TextInput,
+} from "../components/ui";
 import type { CommentItem, CommentStatus, Post } from "../types";
 import { timeAgo } from "../utils/format";
 
@@ -41,7 +55,7 @@ export default function Comments() {
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [posts] = useState<Post[]>([]);
-  const [adminName] = useState(seedState.settings.username || "DAVAID");
+  const [adminName] = useState("DAVAID");
 
   const [tab, setTab] = useState<CommentStatus>("pending");
   const [toDelete, setToDelete] = useState<string | null>(null);
@@ -75,14 +89,20 @@ export default function Comments() {
 
     return {
       counts: c,
-      threads: roots.map((root) => ({ root, replies: repliesByParent.get(root.id) ?? [] })),
+      threads: roots.map((root) => ({
+        root,
+        replies: repliesByParent.get(root.id) ?? [],
+      })),
     };
   }, [comments, tab]);
 
-  const postTitle = (id: string) => posts.find((p) => p.id === id)?.title ?? "（文章已删除）";
+  const postTitle = (id: string) =>
+    posts.find((p) => p.id === id)?.title ?? "（文章已删除）";
 
   const setCommentStatus = (id: string, status: CommentStatus) => {
-    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    setComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status } : c)),
+    );
     message.success(status === "approved" ? "已通过" : "已移入垃圾");
   };
 
@@ -161,8 +181,16 @@ export default function Comments() {
         <Reveal delay={1}>
           <EmptyState
             icon={MessageSquare}
-            title={tab === "pending" ? "没有待审核评论" : tab === "approved" ? "还没有通过的评论" : "垃圾筒是空的"}
-            hint={tab === "pending" ? "新评论会出现在这里，等你裁决。" : undefined}
+            title={
+              tab === "pending"
+                ? "没有待审核评论"
+                : tab === "approved"
+                  ? "还没有通过的评论"
+                  : "垃圾筒是空的"
+            }
+            hint={
+              tab === "pending" ? "新评论会出现在这里，等你裁决。" : undefined
+            }
           />
         </Reveal>
       ) : (
@@ -174,12 +202,20 @@ export default function Comments() {
                   <Avatar c={root} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-[13px] font-bold text-cream">{root.author}</span>
+                      <span className="font-display text-[13px] font-bold text-cream">
+                        {root.author}
+                      </span>
                       {root.isAdmin && <AdminBadge />}
-                      <span className="text-[11px] text-ash">{timeAgo(root.createdAt)}</span>
+                      <span className="text-[11px] text-ash">
+                        {timeAgo(root.createdAt)}
+                      </span>
                       <span className="text-[11px] text-ash">·</span>
                       <Link
-                        to={posts.some((p) => p.id === root.postId) ? `/posts/${root.postId}` : "/posts"}
+                        to={
+                          posts.some((p) => p.id === root.postId)
+                            ? `/posts/${root.postId}`
+                            : "/posts"
+                        }
                         className="link-sweep truncate text-[12px] text-fog hover:text-ember"
                       >
                         《{postTitle(root.postId)}》
@@ -191,7 +227,9 @@ export default function Comments() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-fog">{root.content}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-fog">
+                      {root.content}
+                    </p>
 
                     {/* 操作区 */}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -201,7 +239,9 @@ export default function Comments() {
                             variant="outline"
                             className="min-h-[30px] px-2.5 text-xs"
                             icon={Check}
-                            onClick={() => setCommentStatus(root.id, "approved")}
+                            onClick={() =>
+                              setCommentStatus(root.id, "approved")
+                            }
                           >
                             通过
                           </Button>
@@ -235,7 +275,12 @@ export default function Comments() {
                           {replyTo === root.id ? "收起回复" : "回复"}
                         </Button>
                       )}
-                      <IconButton icon={Trash2} label="删除评论" danger onClick={() => setToDelete(root.id)} />
+                      <IconButton
+                        icon={Trash2}
+                        label="删除评论"
+                        danger
+                        onClick={() => setToDelete(root.id)}
+                      />
                     </div>
 
                     {/* 回复框 */}
@@ -244,12 +289,18 @@ export default function Comments() {
                         <TextInput
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && submitReply(root)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && submitReply(root)
+                          }
                           placeholder={`以站长身份回复 ${root.author}…`}
                           aria-label="回复内容"
                           autoFocus
                         />
-                        <Button className="shrink-0" icon={Send} onClick={() => submitReply(root)}>
+                        <Button
+                          className="shrink-0"
+                          icon={Send}
+                          onClick={() => submitReply(root)}
+                        >
                           发送
                         </Button>
                       </div>
@@ -259,21 +310,32 @@ export default function Comments() {
                     {replies.length > 0 && (
                       <ul className="mt-3 space-y-2 border-l-2 border-line pl-3 sm:pl-4">
                         {replies.map((r) => (
-                          <li key={r.id} className="fade-in rounded-md bg-raised/50 p-2.5">
+                          <li
+                            key={r.id}
+                            className="fade-in rounded-md bg-raised/50 p-2.5"
+                          >
                             <div className="flex items-start gap-2.5">
                               <Avatar c={r} small />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="font-display text-xs font-bold text-cream">{r.author}</span>
+                                  <span className="font-display text-xs font-bold text-cream">
+                                    {r.author}
+                                  </span>
                                   {r.isAdmin && <AdminBadge />}
-                                  <span className="text-[11px] text-ash">{timeAgo(r.createdAt)}</span>
+                                  <span className="text-[11px] text-ash">
+                                    {timeAgo(r.createdAt)}
+                                  </span>
                                   {r.status !== "approved" && (
                                     <span className="rounded-sm bg-gold/15 px-1.5 py-0.5 font-display text-[10px] text-gold">
-                                      {r.status === "pending" ? "待审核" : "垃圾"}
+                                      {r.status === "pending"
+                                        ? "待审核"
+                                        : "垃圾"}
                                     </span>
                                   )}
                                 </div>
-                                <p className="mt-1 text-[13px] leading-relaxed text-fog">{r.content}</p>
+                                <p className="mt-1 text-[13px] leading-relaxed text-fog">
+                                  {r.content}
+                                </p>
                               </div>
                               <IconButton
                                 icon={Trash2}

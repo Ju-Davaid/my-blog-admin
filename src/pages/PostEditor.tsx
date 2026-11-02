@@ -16,8 +16,7 @@ import {
 } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 import { useTheme } from "@/theme/useTheme";
-import { seedState } from "@/data/seed";
-import { type Category, type Post, type Tag, PostStatus } from "@/types";
+import { type Post, type Tag, PostStatus } from "@/types";
 import { createOrUpdatePost, getPostById, uploadFile } from "@/api";
 import { useEffect } from "react";
 
@@ -30,8 +29,9 @@ function EditorForm({ isCreate = false }: EditorProps) {
   const navigate = useNavigate();
 
   /* 组件自身状态：分类 / 标签接真实数据时换成接口拉取 */
-  const [categories] = useState<Category[]>(seedState.categories);
-  const [tags] = useState<Tag[]>(seedState.tags);
+  /* Category 类型已移除，分类与标签统一用 Tag（后端 tag/list） */
+  const [categories] = useState<Tag[]>([]);
+  const [tags] = useState<Tag[]>([]);
 
   const [form, setForm] = useState<Post>({
     title: "",
@@ -42,6 +42,8 @@ function EditorForm({ isCreate = false }: EditorProps) {
     status: PostStatus.Draft,
     cover: "",
     views: 0,
+    createdAt: "",
+    updatedAt: "",
   });
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -181,7 +183,10 @@ function EditorForm({ isCreate = false }: EditorProps) {
       </Reveal>
 
       {error && (
-        <Reveal as="p" className="rounded-md border border-ruby/40 bg-ruby/10 px-4 py-2 text-[13px] text-ruby">
+        <Reveal
+          as="p"
+          className="rounded-md border border-ruby/40 bg-ruby/10 px-4 py-2 text-[13px] text-ruby"
+        >
           {error}
         </Reveal>
       )}
@@ -246,7 +251,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
                   value={form.categoryId}
                   onChange={(v) => set("categoryId", v)}
                   options={categories.map((c) => ({
-                    value: c.id,
+                    value: String(c.id),
                     label: c.name,
                   }))}
                   style={{ width: "100%" }}
@@ -342,7 +347,10 @@ function EditorForm({ isCreate = false }: EditorProps) {
           </Card>
 
           {!isCreate && (
-            <Card delay={4} className="p-4 font-display text-[11px] leading-relaxed text-ash">
+            <Card
+              delay={4}
+              className="p-4 font-display text-[11px] leading-relaxed text-ash"
+            >
               <div>ID · {form?.id ?? "草稿"}</div>
               <div>创建 · {form?.createdAt?.toLocaleString()}</div>
               <div>浏览 · {form?.views?.toLocaleString()}</div>
@@ -369,15 +377,12 @@ export default function PostEditor({ isCreate = false }: EditorProps) {
 
   useEffect(() => {
     if (!isCreate && id) {
-      try {
-        getPostById(id).then((res) => setPost(res.data));
-      } catch (error: any) {
-        console.error(error);
-      }
+      /* Promise 的 rejection 不会被外层 try/catch 捕获，必须挂在 .catch 上 */
+      getPostById(id)
+        .then((res) => setPost(res?.data ?? null))
+        .catch((error) => console.error("获取文章失败", error));
     }
   }, [isCreate, id]);
-
-  useEffect(() => {}, []);
 
   if (id && !post) {
     return (

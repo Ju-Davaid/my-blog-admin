@@ -6,9 +6,8 @@ import type { ColumnsType } from "antd/es/table";
 import { App } from "antd";
 import { Reveal } from "../components/Reveal";
 import { Button, Card, ConfirmDialog, EmptyState } from "@/components/ui";
-import { seedState } from "@/data/seed";
 import { formatNumber, timeAgo } from "@/utils/format";
-import { PostStatus, type Category, type PageVO, type Post } from "@/types";
+import { PostStatus, type PageVO, type Post, type Tag as TTag} from "@/types";
 import DefaultCover from "@/assets/images/default-cover.jpg";
 import { getPostList } from "@/api";
 
@@ -25,7 +24,7 @@ export default function Posts() {
     list: [],
     total: 0,
   });
-  const [categories] = useState<Category[]>(seedState.categories);
+  const [categories] = useState<TTag[]>([]);
 
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<number>(2);
@@ -84,7 +83,8 @@ export default function Posts() {
       width: 100,
       render: (_, p) => (
         <Tag variant="filled" color="#8f959e" style={{ margin: 0 }}>
-          {categories.find((c) => c.id === p.categoryId)?.name ?? "未分类"}
+          {categories.find((c) => String(c.id) === p.categoryId)?.name ??
+            "未分类"}
         </Tag>
       ),
     },
@@ -172,7 +172,21 @@ export default function Posts() {
   ];
   useEffect(() => {
     getPostList(pageSize, page)
-      .then((res) => setPosts(res.data))
+      .then((res) => {
+        /* 接口未通 / 返回结构不符时保持空列表，避免 posts 变成 undefined 导致 .total 崩溃 */
+        const d = res?.data;
+        const list: Post[] = Array.isArray(d?.list)
+          ? d.list
+          : Array.isArray(d)
+            ? d
+            : [];
+        setPosts({
+          pageSize: d?.pageSize ?? pageSize,
+          pageNum: d?.pageNum ?? page,
+          list,
+          total: d?.total ?? list.length,
+        });
+      })
       .catch(() => {
         message.error("获取文章列表失败");
       });

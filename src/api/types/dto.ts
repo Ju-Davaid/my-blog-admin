@@ -16,3 +16,9 @@ export interface CaptchaDTO {
 export interface RefreshCaptchaDTO extends CaptchaDTO {
   captchaKey: string;
 }
+
+// 创建标签
+export interface CreateTagDTO {
+  name: string;
+  hue: string;
+}

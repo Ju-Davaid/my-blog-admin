@@ -15,7 +15,6 @@ import { useMemo, useRef, useState } from "react";
 import { Card, ConfirmDialog, IconButton } from "../components/ui";
 import { Reveal } from "../components/Reveal";
 import { Trash2 } from "lucide-react";
-import { seedState } from "../data/seed";
 import type { Album, Photo } from "../types";
 import { gradientSrc } from "../utils/art";
 
@@ -44,8 +43,8 @@ export default function Photos() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
-  const [albums, setAlbums] = useState<Album[]>(seedState.albums);
-  const [photos, setPhotos] = useState<Photo[]>(seedState.photos);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
 
   const addAlbum = (name: string, description: string) => {
     const trimmed = name.trim();

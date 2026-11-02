@@ -15,3 +15,9 @@ export interface LoginVO {
   accessToken: string;
   refreshToken: string;
 }
+
+export interface TagVO {
+  id: number;
+  name: string;
+  hue: string;
+}

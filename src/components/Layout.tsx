@@ -12,10 +12,11 @@ import {
   LinkOutlined,
   MessageOutlined,
 } from "@ant-design/icons";
-import { Dropdown } from "antd";
+import { Dropdown, message } from "antd";
 import { MoonOutlined, SunOutlined } from "@ant-design/icons";
 import { useTheme } from "@/theme/useTheme";
 import { UserAvatar } from "./ui";
+import { logout } from "@/api";
 
 const NAV = [
   { to: "/", label: "仪表盘", icon: DashboardOutlined },
@@ -104,10 +105,15 @@ export default function Layout() {
         danger: true,
       },
     ],
-    onClick: ({ key }: { key: string }) => {
+    onClick: async ({ key }: { key: string }) => {
       if (key === "logout") {
-        console.log("退出登录");
-        navigate("/login", { replace: true });
+        try {
+          await logout();
+          navigate("/login", { replace: true });
+        } catch (error) {
+          console.error(error);
+          message.error("退出登录失败");
+        }
       }
     },
   };

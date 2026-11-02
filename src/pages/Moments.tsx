@@ -10,7 +10,6 @@ import {
   TextInput,
   UserAvatar,
 } from "../components/ui";
-import { seedState } from "../data/seed";
 import type { Moment } from "../types";
 
 const MAX_IMAGES = 9;
@@ -20,9 +19,9 @@ export default function Moments() {
 
   /* 页面自身状态：接真实数据时把这里的初值换成接口拉取 */
   const [moments, setMoments] = useState<Moment[]>([]);
-  const [me] = useState(seedState.settings.username || "DAVAID");
+  const [me] = useState("DAVAID");
   const [avatar] = useState<string | undefined>(undefined);
-  const [slogan] = useState(seedState.settings.slogan || "记录生活的每一帧");
+  const [slogan] = useState("记录生活的每一帧");
 
   /* 发布区 */
   const [draft, setDraft] = useState("");
