@@ -102,12 +102,14 @@ export default function Taxonomy() {
   };
 
   const catCount = (id: string) => posts.filter((p) => p.categoryId === id).length;
-  const tagCount = (id: number) => posts.filter((p) => p.tagIds.includes(id)).length;
+  /* tagIds 现在是逗号分隔的字符串 */
+  const tagCount = (id: number) =>
+    posts.filter((p) => p.tagIds.split(",").includes(String(id))).length;
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       {/* 分类 */}
-      <Card className="reveal">
+      <Card delay={0}>
         <CardHeader
           title="分类 · Categories"
           extra={<Badge tone="ember">{categories.length}</Badge>}
@@ -151,7 +153,7 @@ export default function Taxonomy() {
       </Card>
 
       {/* 标签 */}
-      <Card className="reveal reveal-1">
+      <Card delay={1}>
         <CardHeader title="标签 · Tags" extra={<Badge tone="ember">{tags.length}</Badge>} />
         <div className="p-4">
           <AddRow placeholder="新标签，如：徒步" onAdd={addTag} />

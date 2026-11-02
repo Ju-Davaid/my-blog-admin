@@ -13,6 +13,7 @@ import {
 } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { Card, ConfirmDialog, IconButton } from "../components/ui";
+import { Reveal } from "../components/Reveal";
 import { Trash2 } from "lucide-react";
 import { seedState } from "../data/seed";
 import type { Album, Photo } from "../types";
@@ -123,7 +124,7 @@ export default function Photos() {
   if (currentAlbum) {
     return (
       <div className="space-y-5">
-        <div className="reveal flex flex-wrap items-center justify-between gap-3">
+        <Reveal className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <AntButton
               icon={<ArrowLeftOutlined />}
@@ -157,10 +158,10 @@ export default function Photos() {
             onChange={(e) => onUpload(e.target.files)}
             aria-label="选择图片文件"
           />
-        </div>
+        </Reveal>
 
         {albumPhotos.length === 0 ? (
-          <div className="reveal reveal-1">
+          <Reveal delay={1}>
             <Card className="border-dashed py-14">
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -179,16 +180,17 @@ export default function Photos() {
                 </AntButton>
               </Empty>
             </Card>
-          </div>
+          </Reveal>
         ) : (
           /* PreviewGroup 让同相册内所有图片共用一个预览器：左右切换、缩放、旋转 */
           <Image.PreviewGroup>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {albumPhotos.map((p, i) => (
-                <figure
+                <Reveal
+                  as="figure"
                   key={p.id}
-                  className="reveal group relative aspect-4/3 overflow-hidden rounded-lg border border-line bg-raised transition-colors hover:border-line-strong"
-                  style={{ animationDelay: `${Math.min(i, 7) * 0.05}s` }}
+                  delay={Math.min(i, 7)}
+                  className="group relative aspect-4/3 overflow-hidden rounded-lg border border-line bg-raised transition-colors hover:border-line-strong"
                 >
                   <Image
                     src={photoSrc(p)}
@@ -219,7 +221,7 @@ export default function Photos() {
                       onClick={() => setToDeletePhoto(p.id)}
                     />
                   </div>
-                </figure>
+                </Reveal>
               ))}
             </div>
           </Image.PreviewGroup>
@@ -244,7 +246,7 @@ export default function Photos() {
   /* ============ 一级：相册列表 ============ */
   return (
     <div className="space-y-5">
-      <div className="reveal flex flex-wrap items-center justify-between gap-3">
+      <Reveal className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-[16px] font-semibold text-cream">相册</h2>
           <p className="text-[12px] text-ash">
@@ -258,10 +260,10 @@ export default function Photos() {
         >
           新建相册
         </AntButton>
-      </div>
+      </Reveal>
 
       {albums.length === 0 ? (
-        <div className="reveal reveal-1">
+        <Reveal delay={1}>
           <Card className="border-dashed py-14">
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -280,17 +282,17 @@ export default function Photos() {
               </AntButton>
             </Empty>
           </Card>
-        </div>
+        </Reveal>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {albums.map((a, i) => {
             const count = photoCount(a.id);
             const cover = photos.find((p) => p.albumId === a.id);
             return (
-              <div
+              <Reveal
                 key={a.id}
-                className="reveal group cursor-pointer overflow-hidden rounded-lg border border-line bg-surface card-shadow transition-all hover:border-[#409eff] hover:shadow-[0_4px_16px_rgba(64,158,255,0.12)]"
-                style={{ animationDelay: `${Math.min(i, 7) * 0.05}s` }}
+                delay={Math.min(i, 7)}
+                className="group cursor-pointer overflow-hidden rounded-lg border border-line bg-surface card-shadow transition-[border-color,box-shadow] duration-200 hover:border-[#409eff] hover:shadow-[0_4px_16px_rgba(64,158,255,0.12)]"
                 onClick={() => setCurrentAlbumId(a.id)}
               >
                 <div className="relative aspect-4/3 overflow-hidden bg-raised">
@@ -340,7 +342,7 @@ export default function Photos() {
                     {a.description || "暂无描述"}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>

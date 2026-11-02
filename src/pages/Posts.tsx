@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Input, Pagination, Select, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { App } from "antd";
+import { Reveal } from "../components/Reveal";
 import { Button, Card, ConfirmDialog, EmptyState } from "@/components/ui";
 import { seedState } from "@/data/seed";
 import { formatNumber, timeAgo } from "@/utils/format";
@@ -130,7 +131,7 @@ export default function Posts() {
       key: "comments",
       width: 70,
       align: "right",
-      render: (_, p) => (
+      render: () => (
         <span className="tnum font-display text-[12px] text-fog">0</span>
       ),
     },
@@ -179,7 +180,7 @@ export default function Posts() {
   return (
     <div className="space-y-4">
       {/* 顶部统计与新建 */}
-      <div className="reveal flex flex-wrap items-center justify-between gap-3">
+      <Reveal className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <span className="text-[15px] font-semibold text-cream">文章</span>
           <span className="font-display text-[12px] text-ash">
@@ -193,10 +194,10 @@ export default function Posts() {
         <Button icon={Plus} onClick={() => navigate("/posts/new")}>
           新建文章
         </Button>
-      </div>
+      </Reveal>
 
       {/* 筛选栏（antd 组件） */}
-      <Card className="reveal reveal-1 flex flex-wrap items-center gap-2.5 p-3">
+      <Card delay={1} className="flex flex-wrap items-center gap-2.5 p-3">
         <Input
           value={q}
           onChange={(e) => {
@@ -252,15 +253,15 @@ export default function Posts() {
 
       {/* 表格（antd Table） */}
       {posts.list.length === 0 ? (
-        <div className="reveal reveal-2">
+        <Reveal delay={2}>
           <EmptyState
             icon={FileText}
             title="没有匹配的文章"
             hint={q ? "换个关键词试试。" : "点击右上角「新建文章」开始第一篇。"}
           />
-        </div>
+        </Reveal>
       ) : (
-        <div className="reveal reveal-2">
+        <Reveal delay={2}>
           <Table<Post>
             columns={columns}
             dataSource={paged}
@@ -296,7 +297,7 @@ export default function Posts() {
               }}
             />
           </div>
-        </div>
+        </Reveal>
       )}
 
       <ConfirmDialog

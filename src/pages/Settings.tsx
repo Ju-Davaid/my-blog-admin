@@ -61,7 +61,7 @@ export default function SettingsPage() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <div className="space-y-5">
-        <Card className="reveal">
+        <Card delay={0}>
           <CardHeader title="站点信息 · Site" extra={<Globe size={14} className="text-ash" />} />
           <div className="space-y-4 p-5">
             <Field label="站点标题">
@@ -85,7 +85,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="reveal reveal-1">
+        <Card delay={1}>
           <CardHeader title="账号 · Account" extra={<UserRound size={14} className="text-ash" />} />
           <div className="space-y-4 p-5">
             {/* 头像 */}
@@ -164,7 +164,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="reveal reveal-2">
+        <Card delay={2}>
           <CardHeader title="联系与社交 · Links" />
           <div className="space-y-4 p-5">
             <Field label="GitHub">
@@ -183,7 +183,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-5">
-        <Card className="reveal reveal-3">
+        <Card delay={3}>
           <CardHeader title="当前生效 · Live" />
           <div className="space-y-4 p-5">
             {/* 头像 + 用户名 */}
@@ -214,7 +214,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="reveal reveal-4">
+        <Card delay={4}>
           <CardHeader
             title="数据 · Data"
             extra={<Database size={14} className="text-ash" />}

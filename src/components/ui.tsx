@@ -1,6 +1,8 @@
 import {useState} from "react";
 import type {InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes} from "react";
 import {Button as AntButton, Modal as AntModal, Tag, Input, Empty} from "antd";
+import {motion} from "motion/react";
+import {useReveal} from "./useReveal";
 import {
   InboxOutlined,
   CloseOutlined,
@@ -271,9 +273,27 @@ export function UserAvatar({
 
 /* ---------- 卡片 ---------- */
 
-export function Card({children, className = ""}: {children: ReactNode; className?: string}) {
+/**
+ * 卡片。传入 delay 即启用 Motion 入场动画（数值为错峰序号，0 起），
+ * 不传则不做动画 —— 保持原本的 div 结构，不改变栅格里的高度表现。
+ */
+export function Card({
+  children,
+  className = "",
+  delay,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const reveal = useReveal(delay);
   return (
-    <div className={`rounded-lg border border-line bg-surface card-shadow ${className}`}>{children}</div>
+    <motion.div
+      className={`rounded-lg border border-line bg-surface card-shadow ${className}`}
+      {...reveal}
+    >
+      {children}
+    </motion.div>
   );
 }
 

@@ -1,5 +1,5 @@
-import {useState} from "react";
-import {NavLink, Outlet, useLocation} from "react-router-dom";
+import { useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CommentOutlined,
   FolderOutlined,
@@ -12,19 +12,19 @@ import {
   LinkOutlined,
   MessageOutlined,
 } from "@ant-design/icons";
-import {Dropdown} from "antd";
-import {MoonOutlined, SunOutlined} from "@ant-design/icons";
-import {useTheme} from "../theme/useTheme";
-import {UserAvatar} from "./ui";
+import { Dropdown } from "antd";
+import { MoonOutlined, SunOutlined } from "@ant-design/icons";
+import { useTheme } from "@/theme/useTheme";
+import { UserAvatar } from "./ui";
 
 const NAV = [
-  {to: "/", label: "仪表盘", icon: DashboardOutlined},
-  {to: "/posts", label: "文章", icon: FileTextOutlined},
-  {to: "/taxonomy", label: "分类标签", icon: FolderOutlined},
-  {to: "/photos", label: "照片", icon: PictureOutlined},
-  {to: "/moments", label: "动态", icon: MessageOutlined},
-  {to: "/comments", label: "评论", icon: CommentOutlined},
-  {to: "/settings", label: "设置", icon: SettingOutlined},
+  { to: "/", label: "仪表盘", icon: DashboardOutlined },
+  { to: "/posts", label: "文章", icon: FileTextOutlined },
+  { to: "/taxonomy", label: "分类标签", icon: FolderOutlined },
+  { to: "/photos", label: "照片", icon: PictureOutlined },
+  { to: "/moments", label: "动态", icon: MessageOutlined },
+  { to: "/comments", label: "评论", icon: CommentOutlined },
+  { to: "/settings", label: "设置", icon: SettingOutlined },
 ];
 
 function titleOf(pathname: string): string {
@@ -34,25 +34,27 @@ function titleOf(pathname: string): string {
   return hit ? hit.label : "仪表盘";
 }
 
-function TopNav({onNavigate}: {onNavigate?: () => void}) {
+function TopNav({ onNavigate }: { onNavigate?: () => void }) {
   // 待审核评论数（组件自身状态，接入接口后在 useEffect 中拉取）
   const [pending] = useState(0);
 
   return (
     <nav className="flex flex-1 items-center gap-1 px-6 max-md:px-3">
-      {NAV.map(({to, label, icon: Icon}) => (
+      {NAV.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
           end={to === "/"}
           onClick={onNavigate}
-          className={({isActive}) =>
+          className={({ isActive }) =>
             `relative flex items-center gap-1.5 px-3.5 py-4 text-[14px] transition-colors ${
-              isActive ? "font-medium text-[#409eff]" : "text-fog hover:text-[#409eff]"
+              isActive
+                ? "font-medium text-[#409eff]"
+                : "text-fog hover:text-[#409eff]"
             }`
           }
         >
-          {({isActive}) => (
+          {({ isActive }) => (
             <>
               <Icon />
               <span>{label}</span>
@@ -72,8 +74,8 @@ function TopNav({onNavigate}: {onNavigate?: () => void}) {
   );
 }
 
-export default function Layout({onLogout}: {onLogout: () => void}) {
-  const {mode, toggle} = useTheme();
+export default function Layout() {
+  const { mode, toggle } = useTheme();
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
   const title = titleOf(location.pathname);
@@ -81,6 +83,7 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
   // 当前登录站长（组件自身状态，接入接口后在 useEffect 中拉取）
   const [user] = useState("DAVAID");
   const [avatar] = useState<string | undefined>(undefined);
+  const navigate = useNavigate();
 
   const userMenu = {
     items: [
@@ -93,11 +96,19 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
           </a>
         ),
       },
-      {type: "divider" as const},
-      {key: "logout", icon: <LogoutOutlined />, label: "退出登录", danger: true},
+      { type: "divider" as const },
+      {
+        key: "logout",
+        icon: <LogoutOutlined />,
+        label: "退出登录",
+        danger: true,
+      },
     ],
-    onClick: ({key}: {key: string}) => {
-      if (key === "logout") onLogout();
+    onClick: ({ key }: { key: string }) => {
+      if (key === "logout") {
+        console.log("退出登录");
+        navigate("/login", { replace: true });
+      }
     },
   };
 
@@ -105,10 +116,10 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
     <div className="flex min-h-screen flex-col bg-ink">
       {/* ===== 白色顶栏 ===== */}
       <header className="sticky top-0 z-30 border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-350 items-center px-4 sm:px-6">
           {/* Logo */}
           <NavLink to="/" className="mr-8 flex shrink-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#409eff] to-[#66b1ff] text-[15px] font-extrabold text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-[#409eff] to-[#66b1ff] text-[15px] font-extrabold text-white">
               D
             </span>
             <span className="text-[15px] font-bold tracking-wide text-cream">
@@ -144,10 +155,16 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
             >
               {dark ? <SunOutlined /> : <MoonOutlined />}
             </button>
-            <Dropdown menu={userMenu} placement="bottomRight" trigger={["click"]}>
+            <Dropdown
+              menu={userMenu}
+              placement="bottomRight"
+              trigger={["click"]}
+            >
               <button className="flex cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-raised">
                 <UserAvatar name={user} src={avatar} size={28} />
-                <span className="hidden max-w-32 truncate text-[13px] text-cream md:block">{user}</span>
+                <span className="hidden max-w-32 truncate text-[13px] text-cream md:block">
+                  {user}
+                </span>
               </button>
             </Dropdown>
             {/* 移动端菜单按钮 */}
@@ -170,7 +187,7 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
       </header>
 
       {/* ===== 内容区 ===== */}
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6 lg:py-6">
+      <main className="mx-auto w-full max-w-350 flex-1 px-4 py-5 sm:px-6 lg:py-6">
         {location.pathname !== "/" && (
           <div className="mb-4 flex items-center gap-2 text-[13px] text-ash">
             <span>首页</span>
@@ -181,9 +198,9 @@ export default function Layout({onLogout}: {onLogout: () => void}) {
         <Outlet />
       </main>
 
-        <footer className="py-5 text-center text-[12px] text-ash">
-          DAVAID BLOG · Console — 不做流量，不求更新，只求把日子留下一点痕迹
-        </footer>
+      <footer className="py-5 text-center text-[12px] text-ash">
+        DAVAID BLOG · Console — 不做流量，不求更新，只求把日子留下一点痕迹
+      </footer>
     </div>
   );
 }

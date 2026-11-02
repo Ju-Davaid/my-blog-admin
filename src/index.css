@@ -132,29 +132,11 @@ body {
   box-shadow: 0 1px 2px var(--tk-shadow), 0 2px 8px var(--tk-shadow);
 }
 
-/* ---------- 入场序列（错峰） ---------- */
+/* ---------- 入场序列 ---------- */
 
-/* 入场动画不用 forwards 填充：
-   fill-forwards 会让 Chrome 永久保持动画活性 →
-   transform 撑出包含块（锁死 fixed 全屏编辑器）、
-   opacity 撑出堆叠上下文（侧栏盖住全屏层）。
-   只写 from，to 取基态，结束即回归无动画状态 */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-
-.reveal {
-  animation: rise 0.55s var(--ease-out);
-}
-.reveal-1 { animation-delay: 0.05s; }
-.reveal-2 { animation-delay: 0.11s; }
-.reveal-3 { animation-delay: 0.17s; }
-.reveal-4 { animation-delay: 0.23s; }
-.reveal-5 { animation-delay: 0.29s; }
-.reveal-6 { animation-delay: 0.35s; }
+/* 入场动画已由 motion 接管（见 components/Reveal.tsx）：
+   whileInView + spring，滚动到视口才播放，结束后 transform 归零，
+   不会再出现 CSS animation fill-forwards 撑出包含块 / 堆叠上下文的老问题 */
 
 @keyframes toast-in {
   from {
@@ -330,7 +312,6 @@ body {
 
 /* ---------- 降级动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .reveal,
   .toast-in,
   .fade-in {
     animation: none;

@@ -141,7 +141,7 @@ export default function Moments() {
   return (
     <div className="mx-auto max-w-205 space-y-5">
       {/* ============ 封面 ============ */}
-      <Card className="reveal overflow-hidden">
+      <Card delay={0} className="overflow-hidden">
         <div className="relative h-40">
           <div
             className="absolute inset-0"
@@ -184,7 +184,7 @@ export default function Moments() {
       </Card>
 
       {/* ============ 发布框 ============ */}
-      <Card className="reveal reveal-1">
+      <Card delay={1}>
         <div className="space-y-3 p-5">
           <TextArea
             rows={3}
@@ -267,7 +267,7 @@ export default function Moments() {
 
       {/* ============ 时间流 ============ */}
       {moments.length === 0 ? (
-        <Card className="reveal reveal-2 border-dashed py-10">
+        <Card delay={2} className="border-dashed py-10">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={

@@ -1,5 +1,7 @@
 import type { Post } from "@/types";
-import request from "./request";
+import request from "./modules/request";
+
+export * from "./modules/auth";
 
 type _CreatePostDTO = Omit<
   Post,

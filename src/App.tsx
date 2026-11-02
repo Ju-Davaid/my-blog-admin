@@ -1,39 +1,25 @@
-import { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Layout from "./components/Layout";
-import { AntdProvider } from "./components/antd";
-import { ThemeProvider } from "./theme/ThemeProvider";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Posts from "./pages/Posts";
-import PostEditor from "./pages/PostEditor";
-import Taxonomy from "./pages/Taxonomy";
-import Photos from "./pages/Photos";
-import Comments from "./pages/Comments";
-import Moments from "./pages/Moments";
-import SettingsPage from "./pages/Settings";
+import Layout from "@/components/Layout";
+import { AntdProvider } from "@/components/antd";
+import { ThemeProvider } from "@/theme/ThemeProvider";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import Posts from "@/pages/Posts";
+import PostEditor from "@/pages/PostEditor";
+import Taxonomy from "@/pages/Taxonomy";
+import Photos from "@/pages/Photos";
+import Comments from "@/pages/Comments";
+import Moments from "@/pages/Moments";
+import SettingsPage from "@/pages/Settings";
 
 export default function App() {
-  const [authed, setAuthed] = useState(
-    () => sessionStorage.getItem("davaid-admin-auth") === "1",
-  );
-
-  if (!authed) {
-    return (
-      <ThemeProvider>
-        <AntdProvider>
-          <Login onLogin={() => setAuthed(true)} />
-        </AntdProvider>
-      </ThemeProvider>
-    );
-  }
-
   return (
     <ThemeProvider>
       <AntdProvider>
         <BrowserRouter>
           <Routes>
-            <Route element={<Layout onLogout={() => setAuthed(false)} />}>
+            <Route path="/login" element={<Login />} />
+            <Route element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="/posts" element={<Posts />} />
               <Route

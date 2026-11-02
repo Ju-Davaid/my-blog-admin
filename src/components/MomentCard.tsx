@@ -90,7 +90,7 @@ export function MomentCard({
   const commentCount = moment.comments.length;
 
   return (
-    <Card className={`reveal reveal-${Math.min(index, 3)} px-5 py-4`}>
+    <Card delay={Math.min(index, 3)} className="px-5 py-4">
       <div className="flex gap-3">
         {/* 头像占位：动态作者统一用站长的首字母头像 */}
         <div className="mt-0.5 shrink-0">

@@ -50,7 +50,7 @@ const flushQueue = (error: any, token = null) => {
 const doRefresh = async () => {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error("NO_REFRESH_TOKEN");
-
+  console.log("刷新 token");
   const { data } = await refreshClient.post("/auth/refresh", { refreshToken });
   // 按后端实际返回结构调整
   setTokens(data);

@@ -14,6 +14,7 @@ import {
   IconButton,
   TextArea,
 } from "@/components/ui";
+import { Reveal } from "@/components/Reveal";
 import { useTheme } from "@/theme/useTheme";
 import { seedState } from "@/data/seed";
 import { type Category, type Post, type Tag, PostStatus } from "@/types";
@@ -125,7 +126,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
   return (
     <div className="space-y-5">
       {/* 顶部操作条 */}
-      <div className="reveal flex flex-wrap items-center gap-3">
+      <Reveal className="flex flex-wrap items-center gap-3">
         <Link
           to="/posts"
           className="flex items-center gap-1.5 font-display text-[12px] tracking-wider text-fog uppercase transition-colors hover:text-ember"
@@ -177,18 +178,18 @@ function EditorForm({ isCreate = false }: EditorProps) {
                 : "保存修改"}
           </Button>
         </div>
-      </div>
+      </Reveal>
 
       {error && (
-        <p className="reveal rounded-md border border-ruby/40 bg-ruby/10 px-4 py-2 text-[13px] text-ruby">
+        <Reveal as="p" className="rounded-md border border-ruby/40 bg-ruby/10 px-4 py-2 text-[13px] text-ruby">
           {error}
-        </p>
+        </Reveal>
       )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* ===== 主编辑区（左，占 2 栏） ===== */}
         <div className="space-y-5 lg:col-span-2">
-          <Card className="reveal reveal-1">
+          <Card delay={1}>
             <div className="border-b border-line px-2 transition-colors focus-within:border-ember">
               <Input
                 ref={titleRef}
@@ -212,7 +213,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
             />
           </Card>
 
-          <Card className="reveal reveal-2 overflow-hidden">
+          <Card delay={2} className="overflow-hidden">
             <CardHeader
               title={`正文 · Markdown — ${charCount} 字`}
               extra={
@@ -238,7 +239,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
 
         {/* ===== 侧栏（右） ===== */}
         <div className="space-y-5">
-          <Card className="reveal reveal-3 p-4">
+          <Card delay={3} className="p-4">
             <div className="mt-4">
               <Field label="分类">
                 <Select
@@ -255,7 +256,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
             </div>
           </Card>
 
-          <Card className="reveal reveal-3 p-4">
+          <Card delay={3} className="p-4">
             <Field label="标签" hint="点击切换，已选高亮">
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {tags.map((t) => {
@@ -288,7 +289,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
             )}
           </Card>
 
-          <Card className="reveal reveal-4 p-4">
+          <Card delay={4} className="p-4">
             <Field
               label="封面图片"
               hint="支持 JPG / PNG / WebP，选图后即时预览"
@@ -341,7 +342,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
           </Card>
 
           {!isCreate && (
-            <Card className="reveal reveal-4 p-4 font-display text-[11px] leading-relaxed text-ash">
+            <Card delay={4} className="p-4 font-display text-[11px] leading-relaxed text-ash">
               <div>ID · {form?.id ?? "草稿"}</div>
               <div>创建 · {form?.createdAt?.toLocaleString()}</div>
               <div>浏览 · {form?.views?.toLocaleString()}</div>
@@ -380,7 +381,7 @@ export default function PostEditor({ isCreate = false }: EditorProps) {
 
   if (id && !post) {
     return (
-      <div className="reveal">
+      <Reveal>
         <Card className="p-10 text-center">
           <p className="font-display text-sm tracking-wider text-fog uppercase">
             404 · Post Not Found
@@ -393,7 +394,7 @@ export default function PostEditor({ isCreate = false }: EditorProps) {
             返回文章列表
           </Link>
         </Card>
-      </div>
+      </Reveal>
     );
   }
 

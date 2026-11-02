@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Reveal } from "../components/Reveal";
 import { TrafficChart } from "../components/TrafficChart";
 import {
   Badge,
@@ -17,10 +18,15 @@ import {
   CardHeader,
   EmptyState,
   StatusDot,
-} from "../components/ui";
+} from "@/components/ui";
 import { seedState } from "../data/seed";
-import type { CommentItem, Post, TrafficPoint } from "../types";
-import { formatNumber, timeAgo } from "../utils/format";
+import {
+  PostStatus,
+  type CommentItem,
+  type Post,
+  type TrafficPoint,
+} from "@/types";
+import { formatNumber, timeAgo } from "@/utils/format";
 
 /* 数字滚动 */
 function useCountUp(target: number, duration = 900) {
@@ -57,12 +63,13 @@ function StatCard({
   value: number;
   sub: React.ReactNode;
   icon: React.ElementType;
-  delay: string;
+  delay: number;
 }) {
   const display = useCountUp(value);
   return (
     <Card
-      className={`reveal ${delay} p-5 transition-colors duration-200 hover:border-line-strong`}
+      delay={delay}
+      className="p-5 transition-colors duration-200 hover:border-line-strong"
     >
       <div className="flex items-start justify-between">
         <div>
@@ -94,14 +101,18 @@ export default function Dashboard() {
   const [traffic] = useState<TrafficPoint[]>([]);
   const [username] = useState(seedState.settings.username || "DAVAID");
 
-  const published = posts.filter((p) => p.status === "published");
-  const drafts = posts.filter((p) => p.status === "draft");
-  const pendingComments = comments.filter((c) => c.status === "pending");
+  const published = posts.filter((p) => p.status === PostStatus.Published);
+  const drafts = posts.filter((p) => p.status === PostStatus.Draft);
+  const pendingComments = comments.filter(
+    (c) => c.status === "pending",
+  );
   const totalViews = posts.reduce((s, p) => s + p.views, 0);
 
   const recentPosts = useMemo(
     () =>
-      [...posts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5),
+      [...posts]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 5),
     [posts],
   );
 
@@ -121,7 +132,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       {/* 欢迎条 */}
-      <div className="reveal flex flex-wrap items-end justify-between gap-3">
+      <Reveal className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-display text-[11px] tracking-[0.2em] text-ash uppercase">
             {new Date().getHours() < 12
@@ -138,7 +149,7 @@ export default function Dashboard() {
         <Button icon={PenLine} onClick={() => navigate("/posts/new")}>
           写新文章
         </Button>
-      </div>
+      </Reveal>
 
       {/* 统计卡 */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -148,7 +159,7 @@ export default function Dashboard() {
           value={posts.length}
           sub={`已发布 ${published.length} · 草稿 ${drafts.length}`}
           icon={FileText}
-          delay="reveal-1"
+          delay={1}
         />
         <StatCard
           label="总浏览"
@@ -156,7 +167,7 @@ export default function Dashboard() {
           value={totalViews}
           sub={`近 7 天 ${formatNumber(pv7)} PV`}
           icon={Eye}
-          delay="reveal-2"
+          delay={2}
         />
         <StatCard
           label="评论"
@@ -164,7 +175,7 @@ export default function Dashboard() {
           value={comments.filter((c) => c.status !== "spam").length}
           sub={`待审核 ${pendingComments.length} 条`}
           icon={MessageSquare}
-          delay="reveal-3"
+          delay={3}
         />
         <StatCard
           label="照片"
@@ -172,12 +183,12 @@ export default function Dashboard() {
           value={photos.length}
           sub={`${albums.length} 个相册`}
           icon={ImageIcon}
-          delay="reveal-4"
+          delay={4}
         />
       </div>
 
       {/* 流量图 */}
-      <Card className="reveal reveal-2">
+      <Card delay={2}>
         <CardHeader
           title="访问趋势 · 近30天"
           extra={
@@ -202,7 +213,7 @@ export default function Dashboard() {
 
       <div className="grid gap-5 lg:grid-cols-5">
         {/* 最近文章 */}
-        <Card className="reveal reveal-3 lg:col-span-3">
+        <Card delay={3} className="lg:col-span-3">
           <CardHeader
             title="最近更新 · Recent"
             extra={
@@ -222,7 +233,7 @@ export default function Dashboard() {
                   className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-raised/60"
                 >
                   <StatusDot
-                    color={p.status === "published" ? "moss" : "gold"}
+                    color={p.status === PostStatus.Published ? "moss" : "gold"}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-cream transition-colors group-hover:text-ember">
@@ -244,7 +255,7 @@ export default function Dashboard() {
         </Card>
 
         {/* 待办 */}
-        <Card className="reveal reveal-4 lg:col-span-2">
+        <Card delay={4} className="lg:col-span-2">
           <CardHeader
             title="待办 · Todo"
             extra={

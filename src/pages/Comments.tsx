@@ -2,6 +2,7 @@ import { Check, CornerDownRight, MessageSquare, RotateCcw, Send, Trash2, X } fro
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { App } from "antd";
+import { Reveal } from "../components/Reveal";
 import { Button, Card, ConfirmDialog, EmptyState, IconButton, TextInput } from "../components/ui";
 import { seedState } from "../data/seed";
 import type { CommentItem, CommentStatus, Post } from "../types";
@@ -132,7 +133,7 @@ export default function Comments() {
   return (
     <div className="space-y-5">
       {/* 标签页 */}
-      <div className="reveal flex flex-wrap gap-1.5">
+      <Reveal className="flex flex-wrap gap-1.5">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
@@ -154,20 +155,20 @@ export default function Comments() {
             </span>
           </button>
         ))}
-      </div>
+      </Reveal>
 
       {threads.length === 0 ? (
-        <div className="reveal reveal-1">
+        <Reveal delay={1}>
           <EmptyState
             icon={MessageSquare}
             title={tab === "pending" ? "没有待审核评论" : tab === "approved" ? "还没有通过的评论" : "垃圾筒是空的"}
             hint={tab === "pending" ? "新评论会出现在这里，等你裁决。" : undefined}
           />
-        </div>
+        </Reveal>
       ) : (
         <ul className="space-y-3">
           {threads.map(({ root, replies }, i) => (
-            <li key={root.id} className="reveal" style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}>
+            <Reveal as="li" key={root.id} delay={Math.min(i, 6)}>
               <Card className="p-4 transition-colors hover:border-line-strong">
                 <div className="flex items-start gap-3">
                   <Avatar c={root} />
@@ -288,7 +289,7 @@ export default function Comments() {
                   </div>
                 </div>
               </Card>
-            </li>
+            </Reveal>
           ))}
         </ul>
       )}
