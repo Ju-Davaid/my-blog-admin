@@ -19,6 +19,8 @@ import { useTheme } from "@/theme/useTheme";
 import { type Post, type Tag, PostStatus } from "@/types";
 import { createOrUpdatePost, getPostById, uploadFile } from "@/api";
 import { useEffect } from "react";
+import { getTagList } from "@/api/modules/tag";
+import type { TagVO } from "@/api/types/vo";
 
 interface EditorProps {
   isCreate?: boolean;
@@ -28,17 +30,14 @@ function EditorForm({ isCreate = false }: EditorProps) {
   const { mode } = useTheme();
   const navigate = useNavigate();
 
-  /* 组件自身状态：分类 / 标签接真实数据时换成接口拉取 */
-  /* Category 类型已移除，分类与标签统一用 Tag（后端 tag/list） */
-  const [categories] = useState<Tag[]>([]);
-  const [tags] = useState<Tag[]>([]);
+  const [tags, setTags] = useState<TagVO[]>([]);
 
   const [form, setForm] = useState<Post>({
     title: "",
     desc: "",
     content: "",
     categoryId: null,
-    tagIds: "1,2",
+    tagIds: "",
     status: PostStatus.Draft,
     cover: "",
     views: 0,
@@ -121,6 +120,12 @@ function EditorForm({ isCreate = false }: EditorProps) {
     set("cover", res.data.url);
   };
 
+  useEffect(() => {
+    getTagList().then((res) => {
+      console.log(res);
+      setTags(res.data);
+    });
+  }, []);
   const clearCover = () => {
     set("cover", "");
   };
@@ -244,23 +249,6 @@ function EditorForm({ isCreate = false }: EditorProps) {
 
         {/* ===== 侧栏（右） ===== */}
         <div className="space-y-5">
-          <Card delay={3} className="p-4">
-            <div className="mt-4">
-              <Field label="分类">
-                <Select
-                  value={form.categoryId}
-                  onChange={(v) => set("categoryId", v)}
-                  options={categories.map((c) => ({
-                    value: String(c.id),
-                    label: c.name,
-                  }))}
-                  style={{ width: "100%" }}
-                  aria-label="选择分类"
-                />
-              </Field>
-            </div>
-          </Card>
-
           <Card delay={3} className="p-4">
             <Field label="标签" hint="点击切换，已选高亮">
               <div className="flex flex-wrap gap-1.5 pt-1">
