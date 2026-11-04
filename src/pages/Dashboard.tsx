@@ -20,15 +20,13 @@ import {
   StatusDot,
 } from "@/components/ui";
 import {
-  PostStatus,
   type Album,
   type CommentItem,
   type Photo,
-  type Post,
-  type Tag,
   type TrafficPoint,
 } from "@/types";
 import { formatNumber, timeAgo } from "@/utils/format";
+import { PostStatus, type PostVO, type TagVO } from "@/types/vo";
 
 /* 数字滚动 */
 function useCountUp(target: number, duration = 900) {
@@ -95,12 +93,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
-  const [posts] = useState<Post[]>([]);
+  const [posts] = useState<PostVO[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [photos] = useState<Photo[]>([]);
   const [albums] = useState<Album[]>([]);
   /* Category 类型已移除，分类与标签统一用 Tag（后端 tag/list） */
-  const [categories] = useState<Tag[]>([]);
+  const [categories] = useState<TagVO[]>([]);
   const [traffic] = useState<TrafficPoint[]>([]);
   const [username] = useState("DAVAID");
 
@@ -119,7 +117,7 @@ export default function Dashboard() {
     [posts],
   );
 
-  const commentPostTitle = (postId: string) =>
+  const commentPostTitle = (postId: number | string) =>
     posts.find((p) => p.id === postId)?.title ?? "（文章已删除）";
 
   const setCommentStatus = (id: string, status: CommentItem["status"]) =>

@@ -9,9 +9,8 @@ import {
   EmptyState,
   TextInput,
 } from "../components/ui";
-import type { Post } from "../types";
-import type { TagVO } from "@/api/types/vo";
-import { addTag, getTagList } from "@/api/modules/tag";
+import type { TagVO } from "@/types/vo";
+import { addTag, deleteTag, getTagList } from "@/api/modules/tag";
 
 function AddRow({
   placeholder,
@@ -63,7 +62,6 @@ function AddRow({
 export default function Taxonomy() {
   const { message } = App.useApp();
   const [tags, setTags] = useState<TagVO[]>([]);
-  const [posts] = useState<Post[]>([]);
 
   const handleAddTag = async (name: string) => {
     try {
@@ -85,14 +83,17 @@ export default function Taxonomy() {
     }
   };
 
-  const deleteTag = (id: number) => {
-    setTags((prev) => prev.filter((t) => t.id !== id));
-    message.success("标签已删除");
+  const handleDeleteTag = async (id: number) => {
+    try {
+      setTags((prev) => prev.filter((t) => t.id !== id));
+      await deleteTag(id);
+      message.success("标签已删除");
+    } catch (err) {
+      console.error(err);
+      message.error("删除标签失败");
+    }
   };
 
-  /* tagIds 现在是逗号分隔的字符串 */
-  const tagCount = (id: number) =>
-    posts.filter((p) => p.tagIds.split(",").includes(String(id))).length;
   useEffect(() => {
     getTagList()
       .then((res) => setTags(Array.isArray(res?.data) ? res.data : []))
@@ -115,7 +116,6 @@ export default function Taxonomy() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {tags.map((t) => {
-                const count = tagCount(t.id);
                 return (
                   <span
                     key={t.id}
@@ -127,10 +127,10 @@ export default function Taxonomy() {
                     />
                     {t.name}
                     <span className="tnum font-display text-[10px] text-ash">
-                      {count}
+                      {t.count}
                     </span>
                     <button
-                      onClick={() => deleteTag(t.id)}
+                      onClick={() => handleDeleteTag(t.id)}
                       aria-label={`删除标签 ${t.name}`}
                       className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-ash opacity-0 transition-all group-hover:opacity-100 hover:bg-ruby/15 hover:text-ruby"
                     >

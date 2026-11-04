@@ -1,28 +1,3 @@
-export enum PostStatus {
-  Draft,
-  Published,
-}
-
-export interface Post {
-  id?: string;
-  title: string;
-  desc: string; // 摘要
-  content: string; // Markdown
-  categoryId: string | null;
-  tagIds: string;
-  status: PostStatus;
-  cover: string;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Tag {
-  id: number;
-  name: string;
-  hue: number;
-}
-
 export type CommentStatus = "pending" | "approved" | "spam";
 
 export interface CommentItem {
@@ -96,21 +71,3 @@ export interface TrafficPoint {
   uv: number;
 }
 
-export interface AppState {
-  version: number;
-  posts: Post[];
-  tags: Tag[];
-  comments: CommentItem[];
-  albums: Album[];
-  photos: Photo[];
-  moments: Moment[];
-  settings: Settings;
-  traffic: TrafficPoint[];
-}
-
-export interface PageVO<T> {
-  list: T[];
-  total: number;
-  pageSize: number;
-  pageNum: number;
-}

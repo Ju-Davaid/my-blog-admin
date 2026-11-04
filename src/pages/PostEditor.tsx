@@ -1,7 +1,7 @@
 import { ArrowLeft, ImagePlus, Save, Trash2, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Input, Select, type InputRef } from "antd";
+import { Input, message, type InputRef } from "antd";
 import { MdEditor, type UploadImgCallBack } from "md-editor-rt";
 import "md-editor-rt/lib/style.css";
 import {
@@ -16,33 +16,38 @@ import {
 } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 import { useTheme } from "@/theme/useTheme";
-import { type Post, type Tag, PostStatus } from "@/types";
+import { type PostVO, PostStatus } from "@/types/vo";
 import { createOrUpdatePost, getPostById, uploadFile } from "@/api";
 import { useEffect } from "react";
 import { getTagList } from "@/api/modules/tag";
-import type { TagVO } from "@/api/types/vo";
+import type { TagVO } from "@/types/vo";
 
 interface EditorProps {
   isCreate?: boolean;
+  post: PostVO | null;
 }
 
-function EditorForm({ isCreate = false }: EditorProps) {
+function EditorForm({ isCreate = false, post }: EditorProps) {
   const { mode } = useTheme();
   const navigate = useNavigate();
-
   const [tags, setTags] = useState<TagVO[]>([]);
 
-  const [form, setForm] = useState<Post>({
-    title: "",
-    desc: "",
-    content: "",
-    categoryId: null,
-    tagIds: "",
-    status: PostStatus.Draft,
-    cover: "",
-    views: 0,
-    createdAt: "",
-    updatedAt: "",
+  const [form, setForm] = useState<PostVO>(() => {
+    return (
+      post ?? {
+        id: -1,
+        title: "",
+        desc: "",
+        content: "",
+        categoryId: null,
+        tags: [],
+        status: PostStatus.Draft,
+        cover: "",
+        views: 0,
+        createdAt: "",
+        updatedAt: "",
+      }
+    );
   });
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -58,59 +63,62 @@ function EditorForm({ isCreate = false }: EditorProps) {
     () => form.content.replace(/\s/g, "").length,
     [form.content],
   );
-  const tagIdList = useMemo(() => form.tagIds.split(","), [form.tagIds]);
   // 保存文章
   const save = async () => {
-    if (!form.title.trim()) {
-      setError("标题不能为空");
-      titleRef.current?.focus();
-      return;
+    try {
+      if (!form.title.trim()) {
+        setError("标题不能为空");
+        titleRef.current?.focus();
+        return;
+      }
+      console.log("保存文章", form);
+      await createOrUpdatePost({
+        id: form.id,
+        title: form.title,
+        desc: form.desc,
+        content: form.content,
+        categoryId: form.categoryId,
+        tags: form.tags,
+        status: form.status,
+        cover: form.cover,
+      });
+      message.success("保存文章成功");
+    } catch (error) {
+      console.error(error);
+      message.error("保存文章失败");
     }
-    console.log("保存文章", form);
-    await createOrUpdatePost({
-      title: form.title,
-      desc: form.desc,
-      content: form.content,
-      categoryId: form.categoryId,
-      tagIds: form.tagIds,
-      status: form.status,
-      cover: form.cover,
-    });
   };
 
   // 上传图片
-  const onUploadImg = async (
-    files: Array<File>,
-    callBack: UploadImgCallBack,
-  ) => {
-    const urls = await Promise.all(
-      files.map(async (file) => {
-        const result: any = await uploadFile(file);
-        const data = result.data as { url: string };
-        if (
-          typeof data !== "object" ||
-          data === null ||
-          !("url" in data) ||
-          typeof data.url !== "string" ||
-          !data.url
-        ) {
-          throw new Error("文件上传接口未返回有效的 url");
-        }
-        return data.url;
-      }),
-    );
-    callBack(urls);
-  };
+  const onUploadImg = useCallback(
+    async (files: Array<File>, callBack: UploadImgCallBack) => {
+      const urls = await Promise.all(
+        files.map(async (file) => {
+          const result: any = await uploadFile(file);
+          const data = result.data as { url: string };
+          if (
+            typeof data !== "object" ||
+            data === null ||
+            !("url" in data) ||
+            typeof data.url !== "string" ||
+            !data.url
+          ) {
+            throw new Error("文件上传接口未返回有效的 url");
+          }
+          return data.url;
+        }),
+      );
+      callBack(urls);
+    },
+    [],
+  );
   // 切换标签
-  const toggleTag = (id: number | string) => {
-    id = id.toString();
-    set(
-      "tagIds",
-      (tagIdList?.includes(id)
-        ? tagIdList.filter((t) => t !== id)
-        : [...(form.tagIds ?? []), id]
-      ).join(","),
-    );
+  const toggleTag = (tag: TagVO) => {
+    const newTags = form.tags.some((t) => t.id === tag.id)
+      ? form.tags.filter((t) => t.id !== tag.id)
+      : [...(form.tags ?? []), tag];
+    set("tags", newTags);
+    console.log(newTags, tag);
   };
 
   const pickCover = async (files: FileList | null) => {
@@ -253,11 +261,11 @@ function EditorForm({ isCreate = false }: EditorProps) {
             <Field label="标签" hint="点击切换，已选高亮">
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {tags.map((t) => {
-                  const on = tagIdList?.includes(t.id.toString());
+                  const on = form.tags?.some((ft) => ft.id === t.id);
                   return (
                     <button
                       key={t.id}
-                      onClick={() => toggleTag(t.id)}
+                      onClick={() => toggleTag(t)}
                       aria-pressed={on}
                       className={`cursor-pointer rounded-sm border px-2 py-1 text-xs transition-all duration-150 ${
                         on
@@ -271,11 +279,11 @@ function EditorForm({ isCreate = false }: EditorProps) {
                 })}
               </div>
             </Field>
-            {form.tagIds && form.tagIds?.length > 0 && (
+            {form.tags && form.tags?.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1 border-t border-dashed border-line pt-3">
-                {tagIdList.map((id) => (
-                  <Badge key={id} tone="ember">
-                    {tags.find((t) => t.id.toString() === id)?.name}
+                {form.tags.map((ft) => (
+                  <Badge key={ft.id} tone="ember">
+                    {tags.find((t) => t.id === ft.id)?.name}
                   </Badge>
                 ))}
               </div>
@@ -361,7 +369,7 @@ function EditorForm({ isCreate = false }: EditorProps) {
 
 export default function PostEditor({ isCreate = false }: EditorProps) {
   const { id } = useParams();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<PostVO | null>(null);
 
   useEffect(() => {
     if (!isCreate && id) {
@@ -391,5 +399,5 @@ export default function PostEditor({ isCreate = false }: EditorProps) {
     );
   }
 
-  return <EditorForm key={id ?? "new"} isCreate />;
+  return <EditorForm key={id ?? "new"} isCreate post={post} />;
 }

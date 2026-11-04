@@ -7,7 +7,8 @@ import { App } from "antd";
 import { Reveal } from "../components/Reveal";
 import { Button, Card, ConfirmDialog, EmptyState } from "@/components/ui";
 import { formatNumber, timeAgo } from "@/utils/format";
-import { PostStatus, type PageVO, type Post, type Tag as TTag} from "@/types";
+import { PostStatus, type PageVO, type PostVO, type TagVO } from "@/types/vo";
+
 import DefaultCover from "@/assets/images/default-cover.jpg";
 import { getPostList } from "@/api";
 
@@ -18,19 +19,19 @@ export default function Posts() {
   const navigate = useNavigate();
 
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
-  const [posts, setPosts] = useState<PageVO<Post>>({
+  const [posts, setPosts] = useState<PageVO<PostVO>>({
     pageSize: 10,
     pageNum: 1,
     list: [],
     total: 0,
   });
-  const [categories] = useState<TTag[]>([]);
+  const [categories] = useState<TagVO[]>([]);
 
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<number>(2);
   const [status, setStatus] = useState<StatusFilter>(2);
   const [sort, setSort] = useState<"updated" | "views">("updated");
-  const [toDelete, setToDelete] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -46,7 +47,7 @@ export default function Posts() {
     [posts, safePage, pageSize],
   );
 
-  const columns: ColumnsType<Post> = [
+  const columns: ColumnsType<PostVO> = [
     {
       title: "封面",
       key: "cover",
@@ -78,38 +79,24 @@ export default function Posts() {
       ),
     },
     {
-      title: "分类",
-      key: "category",
-      width: 100,
-      render: (_, p) => (
-        <Tag variant="filled" color="#8f959e" style={{ margin: 0 }}>
-          {categories.find((c) => String(c.id) === p.categoryId)?.name ??
-            "未分类"}
-        </Tag>
-      ),
-    },
-    {
       title: "标签",
       key: "tags",
       width: 160,
       render: (_, p) => (
         <div className="flex flex-wrap gap-1">
-          {p.tagIds
-            .split(",")
-            .slice(0, 2)
-            .map((t) => (
-              <Tag
-                key={t}
-                variant="filled"
-                color="#409eff"
-                style={{ margin: 0, fontSize: 12 }}
-              >
-                t
-              </Tag>
-            ))}
-          {p.tagIds.length > 2 && (
+          {p.tags.map((t) => (
+            <Tag
+              key={t.id}
+              variant="filled"
+              color="#409eff"
+              style={{ margin: 0, fontSize: 12 }}
+            >
+              {t.name}
+            </Tag>
+          ))}
+          {p.tags.length > 2 && (
             <span className="font-display text-[10px] text-ash">
-              +{p.tagIds.length - 2}
+              +{p.tags.length - 2}
             </span>
           )}
         </div>
@@ -161,7 +148,7 @@ export default function Posts() {
           </button>
           <button
             aria-label="删除"
-            onClick={() => setToDelete(p.id!)}
+            onClick={() => setToDelete(p.id)}
             className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-ash transition-colors hover:bg-ruby/10 hover:text-ruby"
           >
             <Trash2 size={14} strokeWidth={2} />
@@ -173,9 +160,8 @@ export default function Posts() {
   useEffect(() => {
     getPostList(pageSize, page)
       .then((res) => {
-        /* 接口未通 / 返回结构不符时保持空列表，避免 posts 变成 undefined 导致 .total 崩溃 */
         const d = res?.data;
-        const list: Post[] = Array.isArray(d?.list)
+        const list: PostVO[] = Array.isArray(d?.list)
           ? d.list
           : Array.isArray(d)
             ? d
@@ -276,7 +262,7 @@ export default function Posts() {
         </Reveal>
       ) : (
         <Reveal delay={2}>
-          <Table<Post>
+          <Table<PostVO>
             columns={columns}
             dataSource={paged}
             rowKey="id"

@@ -1,5 +1,5 @@
 import { getCaptcha, login, refreshCaptcha } from "@/api";
-import type { CaptchaVO } from "@/api/types/vo";
+import type { CaptchaVO } from "@/types/vo";
 import { setTokens } from "@/utils/token";
 import {
   LockOutlined,
@@ -201,7 +201,11 @@ export default function Login() {
           </AntButton>
         </Reveal>
 
-        <Reveal as="p" delay={2} className="mt-6 text-center text-xs leading-relaxed text-ash">
+        <Reveal
+          as="p"
+          delay={2}
+          className="mt-6 text-center text-xs leading-relaxed text-ash"
+        >
           在这里存放一些写不完的代码、拍不满的照片、
           <br />
           和偶尔想明白的道理。
