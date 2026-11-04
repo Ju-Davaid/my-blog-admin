@@ -26,7 +26,10 @@ export default function App() {
                 path="/posts/new"
                 element={<PostEditor isCreate={true} />}
               />
-              <Route path="/posts/:id" element={<PostEditor />} />
+              <Route
+                path="/posts/:id"
+                element={<PostEditor isCreate={false} />}
+              />
               <Route path="/taxonomy" element={<Taxonomy />} />
               <Route path="/photos" element={<Photos />} />
               <Route path="/comments" element={<Comments />} />

@@ -1,5 +1,5 @@
 import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input, Pagination, Select, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -10,7 +10,7 @@ import { formatNumber, timeAgo } from "@/utils/format";
 import { PostStatus, type PageVO, type PostVO, type TagVO } from "@/types/vo";
 
 import DefaultCover from "@/assets/images/default-cover.jpg";
-import { getPostList } from "@/api";
+import { deletePostById, getPostList } from "@/api";
 
 type StatusFilter = 0 | 1 | 2;
 
@@ -82,6 +82,7 @@ export default function Posts() {
       title: "标签",
       key: "tags",
       width: 160,
+      align: "center",
       render: (_, p) => (
         <div className="flex flex-wrap gap-1">
           {p.tags.map((t) => (
@@ -106,7 +107,7 @@ export default function Posts() {
       title: "浏览",
       key: "views",
       width: 90,
-      align: "right",
+      align: "center",
       render: (_, p) => (
         <span className="tnum font-display text-[12px] text-fog">
           {formatNumber(p.views)}
@@ -117,7 +118,7 @@ export default function Posts() {
       title: "评论",
       key: "comments",
       width: 70,
-      align: "right",
+      align: "center",
       render: () => (
         <span className="tnum font-display text-[12px] text-fog">0</span>
       ),
@@ -125,6 +126,7 @@ export default function Posts() {
     {
       title: "更新",
       key: "updated",
+      align: "center",
       width: 100,
       render: (_, p) => (
         <span className="text-[12px] whitespace-nowrap text-ash">
@@ -133,10 +135,21 @@ export default function Posts() {
       ),
     },
     {
-      title: "",
+      title: "状态",
+      key: "status",
+      width: 70,
+      align: "center",
+      render: (_, p) => (
+        <span className="tnum font-display text-[12px] text-fog">
+          {p.status === PostStatus.Published ? "已发布" : "草稿"}
+        </span>
+      ),
+    },
+    {
+      title: "操作",
       key: "actions",
       width: 80,
-      align: "right",
+      align: "center",
       render: (_, p) => (
         <div className="flex justify-end gap-0.5">
           <button
@@ -148,7 +161,7 @@ export default function Posts() {
           </button>
           <button
             aria-label="删除"
-            onClick={() => setToDelete(p.id)}
+            onClick={() => setToDelete(p.id!)}
             className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-ash transition-colors hover:bg-ruby/10 hover:text-ruby"
           >
             <Trash2 size={14} strokeWidth={2} />
@@ -157,25 +170,33 @@ export default function Posts() {
       ),
     },
   ];
+
+  /**
+   * 获取文章列表
+   */
+  const handleGetPostList = useCallback(async () => {
+    const postRes = await getPostList(pageSize, page);
+    setPosts(postRes.data);
+  }, [message, pageSize, page]);
+
+  /**
+   * 删除文章
+   * @param id 文章id
+   */
+  const handleDeletePost = useCallback(
+    async (id: number) => {
+      await deletePostById(id);
+      message.success("删除文章成功");
+      setToDelete(null);
+      handleGetPostList();
+    },
+    [toDelete, handleGetPostList],
+  );
+
   useEffect(() => {
-    getPostList(pageSize, page)
-      .then((res) => {
-        const d = res?.data;
-        const list: PostVO[] = Array.isArray(d?.list)
-          ? d.list
-          : Array.isArray(d)
-            ? d
-            : [];
-        setPosts({
-          pageSize: d?.pageSize ?? pageSize,
-          pageNum: d?.pageNum ?? page,
-          list,
-          total: d?.total ?? list.length,
-        });
-      })
-      .catch(() => {
-        message.error("获取文章列表失败");
-      });
+    handleGetPostList().then(() => {
+      message.success("获取文章列表成功");
+    });
   }, [message, pageSize, page]);
   return (
     <div className="space-y-4">
@@ -306,9 +327,7 @@ export default function Posts() {
         body={`确定删除《${posts.list.find((p) => p.id === toDelete)?.title ?? ""}》吗？相关评论会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setToDelete(null)}
-        onConfirm={() => {
-          setToDelete(null);
-        }}
+        onConfirm={() => handleDeletePost(toDelete!)}
       />
     </div>
   );

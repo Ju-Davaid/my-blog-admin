@@ -37,15 +37,32 @@ export enum PostStatus {
 }
 
 export interface PostVO {
-  id: number;
+  id?: number;
   title: string;
   desc: string; // 摘要
   content: string; // Markdown
-  categoryId: string | null;
   tags: TagVO[];
   status: PostStatus;
   cover: string;
   views: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlbumVO {
+  id: number;
+  name: string;
+  desc: string;
+  cover: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PhotoVO {
+  id: number;
+  albumId: number;
+  name: string;
+  path: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,18 +1,13 @@
 import type { ResponseVO, PostVO, PageVO } from "@/types/vo";
 import request from "./request";
+import type { CreateOrUpdatePostDTO } from "@/types/dto";
 
-type _CreatePostDTO = Omit<
-  PostVO,
-  "createdAt" | "updatedAt" | "pinned" | "views" | "tagIds"
->;
-
-interface CreatePostDTO extends _CreatePostDTO {}
 
 /**
  * 创建或更新文章
  * @param data 文章数据
  */
-export const createOrUpdatePost = (data: CreatePostDTO) => {
+export const createOrUpdatePost = (data: CreateOrUpdatePostDTO) => {
   return request.post<ResponseVO<PostVO>>("/post/createOrUpdate", data);
 };
 
@@ -32,3 +27,9 @@ export const getPostList = (pageSize = 10, pageNum = 1) =>
  */
 export const getPostById = (id: string) =>
   request.get<ResponseVO<PostVO>>(`/post/${id}`);
+
+/**
+ * 删除文章
+ * @param id 文章id
+ */
+export const deletePostById = (id: number) => request.get(`/post/delete/${id}`);

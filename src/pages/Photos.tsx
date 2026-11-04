@@ -10,19 +10,18 @@ import {
   Modal as AntModal,
   Button as AntButton,
   Image,
+  message,
 } from "antd";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, ConfirmDialog, IconButton } from "../components/ui";
 import { Reveal } from "../components/Reveal";
 import { Trash2 } from "lucide-react";
 import type { Album, Photo } from "../types";
 import { gradientSrc } from "../utils/art";
+import { createAlbum } from "@/api";
 
-/* 兜底图：没有上传文件时按 id 散列出现成一张渐变 SVG（真实图片源，
-   这样 antd Image 的懒加载与放大预览对兜底图同样成立） */
 const photoSrc = (p: Photo) => p.src ?? gradientSrc(p.id);
 
-/* 铺满父容器的图片壳：antd Image 外层是 .ant-image，需显式撑满 */
 const TILE_CLASS_NAMES = { root: "photo-tile", image: "photo-tile-img" };
 const TILE_STYLES = {
   root: {
@@ -86,9 +85,7 @@ export default function Photos() {
   );
   const albumPhotos = useMemo(
     () =>
-      currentAlbumId
-        ? photos.filter((p) => p.albumId === currentAlbumId)
-        : [],
+      currentAlbumId ? photos.filter((p) => p.albumId === currentAlbumId) : [],
     [photos, currentAlbumId],
   );
 
@@ -111,12 +108,21 @@ export default function Photos() {
       });
     if (fileRef.current) fileRef.current.value = "";
   };
-
-  const submitCreate = () => {
-    if (!addAlbum(newName, newDesc)) return;
-    setCreateOpen(false);
-    setNewName("");
-    setNewDesc("");
+  const submitCreate = async () => {
+    try {
+      if (!addAlbum(newName, newDesc)) return;
+      await createAlbum({
+        name: newName,
+        desc: newDesc,
+      });
+      setCreateOpen(false);
+      setNewName("");
+      setNewDesc("");
+      message.success("创建相册成功");
+    } catch (error) {
+      message.error("创建相册失败");
+      console.error(error);
+    }
   };
 
   /* ============ 二级：相册详情（查看图片 + 上传） ============ */

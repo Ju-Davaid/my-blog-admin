@@ -21,6 +21,7 @@ import { createOrUpdatePost, getPostById, uploadFile } from "@/api";
 import { useEffect } from "react";
 import { getTagList } from "@/api/modules/tag";
 import type { TagVO } from "@/types/vo";
+import type { CreateOrUpdatePostDTO } from "@/types/dto";
 
 interface EditorProps {
   isCreate?: boolean;
@@ -35,7 +36,6 @@ function EditorForm({ isCreate = false, post }: EditorProps) {
   const [form, setForm] = useState<PostVO>(() => {
     return (
       post ?? {
-        id: -1,
         title: "",
         desc: "",
         content: "",
@@ -72,20 +72,27 @@ function EditorForm({ isCreate = false, post }: EditorProps) {
         return;
       }
       console.log("保存文章", form);
-      await createOrUpdatePost({
-        id: form.id,
+      const dto: CreateOrUpdatePostDTO = {
         title: form.title,
         desc: form.desc,
         content: form.content,
-        categoryId: form.categoryId,
         tags: form.tags,
         status: form.status,
         cover: form.cover,
-      });
+      };
+      if (!isCreate) {
+        dto.id = post!.id;
+      }
+      console.log("isCreate", isCreate);
+      console.log("post", post);
+      console.log("dto", dto);
+      await createOrUpdatePost(dto);
       message.success("保存文章成功");
-    } catch (error) {
-      console.error(error);
-      message.error("保存文章失败");
+    } catch (error: any) {
+      const errMsg = (error.response.data.msg as string).split(";");
+      for (const msg of errMsg) {
+        message.error(msg);
+      }
     }
   };
 
@@ -367,13 +374,16 @@ function EditorForm({ isCreate = false, post }: EditorProps) {
   );
 }
 
-export default function PostEditor({ isCreate = false }: EditorProps) {
+export default function PostEditor({
+  isCreate = false,
+}: {
+  isCreate?: boolean;
+}) {
   const { id } = useParams();
   const [post, setPost] = useState<PostVO | null>(null);
 
   useEffect(() => {
     if (!isCreate && id) {
-      /* Promise 的 rejection 不会被外层 try/catch 捕获，必须挂在 .catch 上 */
       getPostById(id)
         .then((res) => setPost(res?.data ?? null))
         .catch((error) => console.error("获取文章失败", error));
@@ -399,5 +409,5 @@ export default function PostEditor({ isCreate = false }: EditorProps) {
     );
   }
 
-  return <EditorForm key={id ?? "new"} isCreate post={post} />;
+  return <EditorForm key={id ?? "new"} isCreate={isCreate} post={post} />;
 }

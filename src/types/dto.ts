@@ -1,3 +1,5 @@
+import type { PostVO } from "./vo";
+
 // 登录
 export interface LoginDTO {
   username: string;
@@ -12,6 +14,8 @@ export interface CaptchaDTO {
   height?: number;
 }
 
+export type CreateOrUpdatePostDTO = Partial<PostVO>;
+
 // 刷新验证码
 export interface RefreshCaptchaDTO extends CaptchaDTO {
   captchaKey: string;
@@ -21,4 +25,9 @@ export interface RefreshCaptchaDTO extends CaptchaDTO {
 export interface CreateTagDTO {
   name: string;
   hue: string;
+}
+
+export interface CreateAlbumDTO {
+  name: string;
+  desc: string;
 }
