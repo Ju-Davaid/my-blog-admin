@@ -1,5 +1,11 @@
 import SparkMD5 from "spark-md5";
 
+/**
+ * 获取文件的 MD5 值
+ * @param file 文件
+ * @param onProgress 进度回调
+ * @returns 文件的 MD5 值
+ */
 const getFileMd5 = (file: File, onProgress?: (progress: number) => void) => {
   return new Promise((resolve, reject) => {
     const chunkSize = 2 * 1024 * 1024; // 2MB 一块

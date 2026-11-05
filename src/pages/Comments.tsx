@@ -19,7 +19,8 @@ import {
   IconButton,
   TextInput,
 } from "../components/ui";
-import type { CommentItem, CommentStatus, Post } from "../types";
+import type { CommentItem, CommentStatus } from "../types";
+import type { PostVO } from "@/types/vo";
 import { timeAgo } from "../utils/format";
 
 const TABS: { key: CommentStatus; label: string }[] = [
@@ -54,7 +55,7 @@ export default function Comments() {
 
   /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
   const [comments, setComments] = useState<CommentItem[]>([]);
-  const [posts] = useState<Post[]>([]);
+  const [posts] = useState<PostVO[]>([]);
   const [adminName] = useState("DAVAID");
 
   const [tab, setTab] = useState<CommentStatus>("pending");
@@ -97,7 +98,7 @@ export default function Comments() {
   }, [comments, tab]);
 
   const postTitle = (id: string) =>
-    posts.find((p) => p.id === id)?.title ?? "（文章已删除）";
+    posts.find((p) => String(p.id) === id)?.title ?? "（文章已删除）";
 
   const setCommentStatus = (id: string, status: CommentStatus) => {
     setComments((prev) =>
@@ -212,7 +213,7 @@ export default function Comments() {
                       <span className="text-[11px] text-ash">·</span>
                       <Link
                         to={
-                          posts.some((p) => p.id === root.postId)
+                          posts.some((p) => String(p.id) === root.postId)
                             ? `/posts/${root.postId}`
                             : "/posts"
                         }

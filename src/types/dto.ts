@@ -31,3 +31,8 @@ export interface CreateAlbumDTO {
   name: string;
   desc: string;
 }
+
+export interface CreatePhotoDTO {
+  file: File;
+  albumId: number;
+}

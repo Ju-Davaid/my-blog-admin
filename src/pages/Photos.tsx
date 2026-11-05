@@ -1,120 +1,67 @@
+import { FolderOutlined, PlusOutlined } from "@ant-design/icons";
 import {
-  ArrowLeftOutlined,
-  FolderOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
-import {
+  Button as AntButton,
   Empty,
+  Image,
   Input,
   Modal as AntModal,
-  Button as AntButton,
-  Image,
+  Skeleton,
   message,
 } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Card, ConfirmDialog, IconButton } from "../components/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, ConfirmDialog } from "../components/ui";
+import { AlbumGridSkeleton } from "../components/PhotoSkeleton";
 import { Reveal } from "../components/Reveal";
 import { Trash2 } from "lucide-react";
-import type { Album, Photo } from "../types";
-import { gradientSrc } from "../utils/art";
-import { createAlbum } from "@/api";
+import { createAlbum, deleteAlbum, getAlbumList } from "@/api";
+import type { AlbumVO } from "@/types/vo";
+import { TILE_CLASS_NAMES, TILE_STYLES } from "@/utils/photoTile";
 
-const photoSrc = (p: Photo) => p.src ?? gradientSrc(p.id);
-
-const TILE_CLASS_NAMES = { root: "photo-tile", image: "photo-tile-img" };
-const TILE_STYLES = {
-  root: {
-    position: "absolute",
-    inset: 0,
-    display: "block",
-    width: "100%",
-    height: "100%",
-  } as const,
-  image: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  } as const,
-};
-
+/** 一级页面：相册列表（点卡片进入 /photos/:id 详情页） */
 export default function Photos() {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
-  /* 页面自身状态：接真实数据时把下面的初值换成接口拉取 */
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [photos, setPhotos] = useState<Photo[]>([]);
-
-  const addAlbum = (name: string, description: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return false;
-    setAlbums((prev) => [
-      ...prev,
-      {
-        id: `al-${Date.now().toString(36)}`,
-        name: trimmed,
-        description: description.trim(),
-        createdAt: new Date().toISOString().slice(0, 10),
-      },
-    ]);
-    return true;
-  };
-
-  const deleteAlbum = (id: string) => {
-    setAlbums((prev) => prev.filter((a) => a.id !== id));
-    setPhotos((prev) => prev.filter((p) => p.albumId !== id));
-  };
-
-  const addPhoto = (photo: Photo) => setPhotos((prev) => [...prev, photo]);
-  const deletePhoto = (id: string) =>
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
-
-  // 当前进入的相册 id；null = 一级（相册列表）
-  const [currentAlbumId, setCurrentAlbumId] = useState<string | null>(null);
-  const [toDeleteAlbum, setToDeleteAlbum] = useState<string | null>(null);
-  const [toDeletePhoto, setToDeletePhoto] = useState<string | null>(null);
+  const [albums, setAlbums] = useState<AlbumVO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toDeleteAlbum, setToDeleteAlbum] = useState<number | null>(null);
 
   // 新建相册弹窗
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
-  const currentAlbum = useMemo(
-    () => albums?.find((a) => a.id === currentAlbumId) ?? null,
-    [albums, currentAlbumId],
-  );
-  const albumPhotos = useMemo(
-    () =>
-      currentAlbumId ? photos.filter((p) => p.albumId === currentAlbumId) : [],
-    [photos, currentAlbumId],
+  const totalPhotos = useMemo(
+    () => albums.reduce((sum, a) => sum + (a.count ?? 0), 0),
+    [albums],
   );
 
-  const photoCount = (albumId: string) =>
-    photos.filter((p) => p.albumId === albumId).length;
-
-  const onUpload = (files: FileList | null) => {
-    if (!files || !currentAlbumId) return;
-    Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .forEach((f, i) => {
-        const photo: Photo = {
-          id: `ph-${Date.now().toString(36)}-${i}`,
-          title: f.name.replace(/\.[^.]+$/, ""),
-          albumId: currentAlbumId,
-          src: URL.createObjectURL(f),
-          takenAt: new Date().toISOString().slice(0, 10),
-        };
-        addPhoto(photo);
-      });
-    if (fileRef.current) fileRef.current.value = "";
-  };
-  const submitCreate = async () => {
+  /* 删除相册 */
+  const handleDeleteAlbum = useCallback(async () => {
     try {
-      if (!addAlbum(newName, newDesc)) return;
-      await createAlbum({
-        name: newName,
-        desc: newDesc,
-      });
+      if (toDeleteAlbum === null) return;
+      await deleteAlbum(toDeleteAlbum);
+      setAlbums((prev) => prev.filter((a) => a.id !== toDeleteAlbum));
+      message.success("删除相册成功");
+    } catch (e) {
+      message.error("删除相册失败");
+      console.error(e);
+    } finally {
+      setToDeleteAlbum(null);
+    }
+  }, [toDeleteAlbum]);
+
+  /* 创建相册 */
+  const submitCreate = async () => {
+    const name = newName.trim();
+    if (!name) {
+      message.warning("相册名称不能为空");
+      return;
+    }
+    try {
+      const res = await createAlbum({ name, desc: newDesc.trim() });
+      const created = res?.data;
+      if (created) setAlbums((prev) => [...prev, created]);
       setCreateOpen(false);
       setNewName("");
       setNewDesc("");
@@ -125,138 +72,44 @@ export default function Photos() {
     }
   };
 
-  /* ============ 二级：相册详情（查看图片 + 上传） ============ */
-  if (currentAlbum) {
-    return (
-      <div className="space-y-5">
-        <Reveal className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <AntButton
-              icon={<ArrowLeftOutlined />}
-              onClick={() => setCurrentAlbumId(null)}
-            >
-              返回相册
-            </AntButton>
-            <div>
-              <h2 className="text-[16px] font-semibold text-cream">
-                {currentAlbum.name}
-              </h2>
-              <p className="text-[12px] text-ash">
-                {currentAlbum.description || "暂无描述"} · {albumPhotos.length}{" "}
-                张照片
-              </p>
-            </div>
-          </div>
-          <AntButton
-            type="primary"
-            icon={<UploadOutlined />}
-            onClick={() => fileRef.current?.click()}
-          >
-            添加图片
-          </AntButton>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(e) => onUpload(e.target.files)}
-            aria-label="选择图片文件"
-          />
-        </Reveal>
+  useEffect(() => {
+    let alive = true;
+    getAlbumList()
+      .then((res) => {
+        if (alive) setAlbums(Array.isArray(res?.data) ? res.data : []);
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-        {albumPhotos.length === 0 ? (
-          <Reveal delay={1}>
-            <Card className="border-dashed py-14">
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <span className="text-[13px] text-fog">
-                    这个相册还没有图片
-                  </span>
-                }
-              >
-                <AntButton
-                  type="primary"
-                  icon={<UploadOutlined />}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  添加图片
-                </AntButton>
-              </Empty>
-            </Card>
-          </Reveal>
-        ) : (
-          /* PreviewGroup 让同相册内所有图片共用一个预览器：左右切换、缩放、旋转 */
-          <Image.PreviewGroup>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-              {albumPhotos.map((p, i) => (
-                <Reveal
-                  as="figure"
-                  key={p.id}
-                  delay={Math.min(i, 7)}
-                  className="group relative aspect-4/3 overflow-hidden rounded-lg border border-line bg-raised transition-colors hover:border-line-strong"
-                >
-                  <Image
-                    src={photoSrc(p)}
-                    alt={p.title}
-                    loading="lazy"
-                    decoding="async"
-                    placeholder={<span className="photo-skeleton" />}
-                    classNames={TILE_CLASS_NAMES}
-                    styles={TILE_STYLES}
-                  />
+  const deleteCount =
+    albums.find((a) => a.id === toDeleteAlbum)?.count ?? 0;
 
-                  {/* 底部信息条：不拦截点击，好让点图直接开预览 */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent p-3 pt-8">
-                    <figcaption className="truncate text-[13px] font-medium text-white">
-                      {p.title}
-                    </figcaption>
-                    <span className="tnum text-[10px] text-white/60">
-                      {p.takenAt}
-                    </span>
-                  </div>
-
-                  <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                    <IconButton
-                      icon={Trash2}
-                      label={`删除图片 ${p.title}`}
-                      danger
-                      className="border border-white/20 bg-black/50 text-white backdrop-blur"
-                      onClick={() => setToDeletePhoto(p.id)}
-                    />
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </Image.PreviewGroup>
-        )}
-
-        {/* 删除图片确认 */}
-        <ConfirmDialog
-          open={toDeletePhoto !== null}
-          title="删除图片"
-          body={`确定删除《${photos.find((p) => p.id === toDeletePhoto)?.title ?? ""}》吗？此操作不可撤销。`}
-          confirmText="删除"
-          onCancel={() => setToDeletePhoto(null)}
-          onConfirm={() => {
-            if (toDeletePhoto) deletePhoto(toDeletePhoto);
-            setToDeletePhoto(null);
-          }}
-        />
-      </div>
-    );
-  }
-
-  /* ============ 一级：相册列表 ============ */
   return (
     <div className="space-y-5">
       <Reveal className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-[16px] font-semibold text-cream">相册</h2>
-          <p className="text-[12px] text-ash">
-            共 {albums.length} 个相册 · {photos.length} 张照片
-          </p>
+          <div className="mt-1 flex h-4 items-center">
+            {loading ? (
+              <Skeleton.Input
+                active
+                size="small"
+                style={{ width: 170, minWidth: 170, height: 12 }}
+              />
+            ) : (
+              <p className="text-[12px] leading-none text-ash">
+                共 {albums.length} 个相册 · {totalPhotos} 张照片
+              </p>
+            )}
+          </div>
         </div>
         <AntButton
           type="primary"
@@ -267,7 +120,9 @@ export default function Photos() {
         </AntButton>
       </Reveal>
 
-      {albums.length === 0 ? (
+      {loading && <AlbumGridSkeleton />}
+
+      {!loading && albums.length === 0 && (
         <Reveal delay={1}>
           <Card className="border-dashed py-14">
             <Empty
@@ -288,68 +143,61 @@ export default function Photos() {
             </Empty>
           </Card>
         </Reveal>
-      ) : (
+      )}
+
+      {!loading && albums.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {albums.map((a, i) => {
-            const count = photoCount(a.id);
-            const cover = photos.find((p) => p.albumId === a.id);
-            return (
-              <Reveal
-                key={a.id}
-                delay={Math.min(i, 7)}
-                className="group cursor-pointer overflow-hidden rounded-lg border border-line bg-surface card-shadow transition-[border-color,box-shadow] duration-200 hover:border-[#409eff] hover:shadow-[0_4px_16px_rgba(64,158,255,0.12)]"
-                onClick={() => setCurrentAlbumId(a.id)}
-              >
-                <div className="relative aspect-4/3 overflow-hidden bg-raised">
-                  {cover ? (
-                    /* preview={false}：封面点击留给「进入相册」，只借 Image 的懒加载 */
-                    <Image
-                      src={photoSrc(cover)}
-                      alt={a.name}
-                      loading="lazy"
-                      decoding="async"
-                      preview={false}
-                      placeholder={<span className="photo-skeleton" />}
-                      classNames={TILE_CLASS_NAMES}
-                      styles={TILE_STYLES}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <FolderOutlined
-                        style={{ fontSize: 40, color: "#c0c4cc" }}
-                      />
-                    </div>
-                  )}
-                  <span className="absolute right-2 bottom-2 z-10 rounded-md px-2 py-0.5 text-[11px] font-medium text-white">
-                    {count} 张
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setToDeleteAlbum(a.id);
-                    }}
-                    aria-label={`删除相册 ${a.name}`}
-                    className="absolute top-2 right-2 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-black/50 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-[#f56c6c]"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-                <div className="p-3">
-                  <div className="flex items-center gap-1.5">
-                    <FolderOutlined
-                      style={{ color: "#409eff", fontSize: 13 }}
-                    />
-                    <h3 className="truncate text-[14px] font-medium text-cream">
-                      {a.name}
-                    </h3>
+          {albums.map((a, i) => (
+            <Reveal
+              key={a.id}
+              delay={Math.min(i, 7)}
+              className="group cursor-pointer overflow-hidden rounded-lg border border-line bg-surface card-shadow transition-[border-color,box-shadow] duration-200 hover:border-[#409eff] hover:shadow-[0_4px_16px_rgba(64,158,255,0.12)]"
+              onClick={() => navigate(`/photos/${a.id}`)}
+            >
+              <div className="relative aspect-4/3 overflow-hidden bg-raised">
+                {a.cover ? (
+                  <Image
+                    src={a.cover}
+                    alt={a.name}
+                    loading="lazy"
+                    decoding="async"
+                    preview={false}
+                    placeholder={<span className="photo-skeleton" />}
+                    classNames={TILE_CLASS_NAMES}
+                    styles={TILE_STYLES}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <FolderOutlined style={{ fontSize: 40, color: "#c0c4cc" }} />
                   </div>
-                  <p className="mt-1 line-clamp-1 text-[12px] text-ash">
-                    {a.description || "暂无描述"}
-                  </p>
+                )}
+                <span className="absolute right-2 bottom-2 z-10 rounded-md px-2 py-0.5 text-[11px] font-medium text-white">
+                  {a.count} 张
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setToDeleteAlbum(a.id);
+                  }}
+                  aria-label={`删除相册 ${a.name}`}
+                  className="absolute top-2 right-2 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-black/50 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-[#f56c6c]"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="p-3">
+                <div className="flex items-center gap-1.5">
+                  <FolderOutlined style={{ color: "#409eff", fontSize: 13 }} />
+                  <h3 className="truncate text-[14px] font-medium text-cream">
+                    {a.name}
+                  </h3>
                 </div>
-              </Reveal>
-            );
-          })}
+                <p className="mt-1 line-clamp-1 text-[12px] text-ash">
+                  {a.desc || "暂无描述"}
+                </p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       )}
 
@@ -395,13 +243,10 @@ export default function Photos() {
       <ConfirmDialog
         open={toDeleteAlbum !== null}
         title="删除相册"
-        body={`确定删除相册《${albums.find((a) => a.id === toDeleteAlbum)?.name ?? ""}》吗？相册内的 ${photoCount(toDeleteAlbum ?? "")} 张图片也会一并删除，此操作不可撤销。`}
+        body={`确定删除相册《${albums.find((a) => a.id === toDeleteAlbum)?.name ?? ""}》吗？相册内的 ${deleteCount} 张图片也会一并删除，此操作不可撤销。`}
         confirmText="删除"
         onCancel={() => setToDeleteAlbum(null)}
-        onConfirm={() => {
-          if (toDeleteAlbum) deleteAlbum(toDeleteAlbum);
-          setToDeleteAlbum(null);
-        }}
+        onConfirm={handleDeleteAlbum}
       />
     </div>
   );

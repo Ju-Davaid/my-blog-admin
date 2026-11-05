@@ -12,7 +12,6 @@ export * from "./modules/album";
  */
 export const uploadFile = async (file: File) => {
   const md5 = await getFileMd5(file);
-  console.log(md5);
   const formData = new FormData();
   formData.append("md5", md5 as string);
   formData.append("file", file);

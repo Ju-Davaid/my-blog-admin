@@ -53,7 +53,8 @@ export interface AlbumVO {
   id: number;
   name: string;
   desc: string;
-  cover: string | null;
+  cover: string;
+  count: number;
   createdAt: string;
   updatedAt: string;
 }

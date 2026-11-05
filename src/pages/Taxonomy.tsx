@@ -77,7 +77,7 @@ export default function Taxonomy() {
       console.log(newTagRes);
       message.success(`标签「${trimmed}」已添加`);
       return true;
-    } catch (err) {
+    } catch {
       message.error("添加标签失败");
       return false;
     }

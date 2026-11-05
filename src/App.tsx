@@ -8,6 +8,7 @@ import Posts from "@/pages/Posts";
 import PostEditor from "@/pages/PostEditor";
 import Taxonomy from "@/pages/Taxonomy";
 import Photos from "@/pages/Photos";
+import PhotoDetail from "@/pages/PhotoDetail";
 import Comments from "@/pages/Comments";
 import Moments from "@/pages/Moments";
 import SettingsPage from "@/pages/Settings";
@@ -32,6 +33,7 @@ export default function App() {
               />
               <Route path="/taxonomy" element={<Taxonomy />} />
               <Route path="/photos" element={<Photos />} />
+              <Route path="/photos/:id" element={<PhotoDetail />} />
               <Route path="/comments" element={<Comments />} />
               <Route path="/moments" element={<Moments />} />
               <Route path="/settings" element={<SettingsPage />} />

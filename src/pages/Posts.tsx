@@ -174,10 +174,11 @@ export default function Posts() {
   /**
    * 获取文章列表
    */
-  const handleGetPostList = useCallback(async () => {
-    const postRes = await getPostList(pageSize, page);
-    setPosts(postRes.data);
-  }, [message, pageSize, page]);
+  const handleGetPostList = useCallback(() => {
+    getPostList(pageSize, page).then((res) => {
+      setPosts(res.data);
+    });
+  }, [pageSize, page]);
 
   /**
    * 删除文章
@@ -190,14 +191,12 @@ export default function Posts() {
       setToDelete(null);
       handleGetPostList();
     },
-    [toDelete, handleGetPostList],
+    [message, handleGetPostList],
   );
 
   useEffect(() => {
-    handleGetPostList().then(() => {
-      message.success("获取文章列表成功");
-    });
-  }, [message, pageSize, page]);
+    handleGetPostList();
+  }, [handleGetPostList]);
   return (
     <div className="space-y-4">
       {/* 顶部统计与新建 */}

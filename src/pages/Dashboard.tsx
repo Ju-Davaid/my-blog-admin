@@ -26,7 +26,7 @@ import {
   type TrafficPoint,
 } from "@/types";
 import { formatNumber, timeAgo } from "@/utils/format";
-import { PostStatus, type PostVO, type TagVO } from "@/types/vo";
+import { PostStatus, type PostVO } from "@/types/vo";
 
 /* 数字滚动 */
 function useCountUp(target: number, duration = 900) {
@@ -98,7 +98,6 @@ export default function Dashboard() {
   const [photos] = useState<Photo[]>([]);
   const [albums] = useState<Album[]>([]);
   /* Category 类型已移除，分类与标签统一用 Tag（后端 tag/list） */
-  const [categories] = useState<TagVO[]>([]);
   const [traffic] = useState<TrafficPoint[]>([]);
   const [username] = useState("DAVAID");
 
@@ -241,8 +240,7 @@ export default function Dashboard() {
                       {p.title}
                     </div>
                     <div className="mt-0.5 truncate text-xs text-ash">
-                      {categories.find((c) => String(c.id) === p.categoryId)
-                        ?.name ?? "未分类"}{" "}
+                      {p.tags?.[0]?.name ?? "未分类"}{" "}
                       · {timeAgo(p.updatedAt)}
                     </div>
                   </div>
