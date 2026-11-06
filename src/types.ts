@@ -33,8 +33,8 @@ export interface Moment {
   /** 点赞人用户名 */
   likes: string[];
   comments: MomentComment[];
-  /** 位置（可选） */
-  location?: string;
+  /** 分类（可选） */
+  category?: string;
 }
 
 export interface Album {

@@ -1,80 +1,104 @@
-import { App, Empty } from "antd";
-import { ImagePlus, MapPin, Sparkles, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { App, Empty, Select } from "antd";
+import { ImagePlus, Sparkles, Tags, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MomentCard } from "../components/MomentCard";
 import {
   Button,
   Card,
   ConfirmDialog,
   TextArea,
-  TextInput,
   UserAvatar,
 } from "../components/ui";
-import type { Moment } from "../types";
+import {
+  createMomment,
+  deleteMomentById,
+  getMomentList,
+  uploadMultipleFile,
+} from "@/api";
+import type { MomentVO } from "@/types/vo";
 
 const MAX_IMAGES = 9;
+
+/* 动态分类预设：暂无分类接口，接后端后换成接口拉取即可 */
+const MOMENT_CATEGORIES = ["生活", "技术", "随笔", "旅行", "摄影"];
+const CATEGORY_OPTIONS = MOMENT_CATEGORIES.map((c) => ({
+  value: c,
+  label: c,
+}));
 
 export default function Moments() {
   const { message } = App.useApp();
 
   /* 页面自身状态：接真实数据时把这里的初值换成接口拉取 */
-  const [moments, setMoments] = useState<Moment[]>([]);
+  const [moments, setMoments] = useState<MomentVO[]>([]);
   const [me] = useState("DAVAID");
   const [avatar] = useState<string | undefined>(undefined);
   const [slogan] = useState("记录生活的每一帧");
 
   /* 发布区 */
   const [draft, setDraft] = useState("");
-  const [place, setPlace] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
   const [pics, setPics] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* 删除目标：动态 或 某条评论 */
-  const [toDelete, setToDelete] = useState<
-    { kind: "moment" | "comment"; momentId: string; commentId?: string } | null
-  >(null);
+  const [toDelete, setToDelete] = useState<{
+    kind: "moment" | "comment";
+    momentId: number;
+    commentId?: number;
+  } | null>(null);
 
   const stats = useMemo(
     () => ({
       count: moments.length,
-      likes: moments.reduce((s, m) => s + m.likes.length, 0),
+      likes: moments.reduce((s, m) => s + m.likes, 0),
       comments: moments.reduce((s, m) => s + m.comments.length, 0),
     }),
     [moments],
   );
-
-  const pickPics = (files: FileList | null) => {
-    if (!files) return;
-    const room = MAX_IMAGES - pics.length;
-    if (room <= 0) {
-      message.warning(`最多只能上传 ${MAX_IMAGES} 张图片`);
-      return;
-    }
-    Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .slice(0, room)
-      .forEach((f) => setPics((prev) => [...prev, URL.createObjectURL(f)]));
-  };
-
-  const publish = () => {
+  // 上传图片
+  const pickPics = useCallback(
+    async (files: FileList | null) => {
+      try {
+        if (!files) return;
+        const room = MAX_IMAGES - pics.length;
+        if (room <= 0) {
+          message.warning(`最多只能上传 ${MAX_IMAGES} 张图片`);
+          return;
+        }
+        const uploadRes = await uploadMultipleFile(Array.from(files));
+        console.log(uploadRes);
+        setPics((prev) => [...prev, ...uploadRes.data.urls]);
+      } catch (error) {
+        console.error(error);
+        message.error("上传失败");
+      }
+    },
+    [pics, message],
+  );
+  // 发布动态
+  const publish = useCallback(async () => {
     if (!draft.trim() && pics.length === 0) return;
-    setMoments((prev) => [
-      {
-        id: `mo-${Date.now().toString(36)}`,
+    try {
+      const { data: publishRes } = await createMomment({
         content: draft.trim(),
-        images: pics,
-        createdAt: new Date().toISOString(),
-        likes: [],
-        comments: [],
-        location: place.trim() || undefined,
-      },
-      ...prev,
-    ]);
-    message.success("动态已发布");
-    setDraft("");
-    setPlace("");
-    setPics([]);
-  };
+        category: category ?? null,
+        urls: pics,
+      });
+      setMoments((prev) => [
+        { ...publishRes, comments: [], likes: [] },
+        ...prev,
+      ]);
+      message.success("动态已发布");
+    } catch (error) {
+      console.error(error);
+      message.error("发布失败");
+    } finally {
+      setDraft("");
+      setCategory(null);
+      setPics([]);
+    }
+  }, [draft, category, pics, message]);
 
   const toggleLike = (id: string) => {
     setMoments((prev) =>
@@ -101,14 +125,14 @@ export default function Moments() {
                 ...m.comments,
                 {
                   id: `mc-${Date.now().toString(36)}`,
-                author: me,
-                content,
-                createdAt: new Date().toISOString(),
-                isAdmin: true,
-                parentId,
-              },
-            ],
-          }
+                  author: me,
+                  content,
+                  createdAt: new Date().toISOString(),
+                  isAdmin: true,
+                  parentId,
+                },
+              ],
+            }
           : m,
       ),
     );
@@ -125,17 +149,51 @@ export default function Moments() {
           grew = false;
           for (const c of m.comments) {
             if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
-          doomed.add(c.id);
-          grew = true;
+              doomed.add(c.id);
+              grew = true;
+            }
+          }
         }
-      }
-    }
         return { ...m, comments: m.comments.filter((c) => !doomed.has(c.id)) };
       }),
     );
   };
 
   const canPublish = draft.trim().length > 0 || pics.length > 0;
+  /**
+   * 删除动态
+   * @param id 动态ID
+   */
+  const handleDelete = useCallback(
+    async () => {
+      try {
+        if (!toDelete) return;
+        if (toDelete.kind === "moment") {
+          await deleteMomentById(toDelete.momentId);
+          setMoments((prev) => prev.filter((m) => m.id !== toDelete.momentId));
+          message.success("删除成功");
+        } else if (toDelete.commentId) {
+          // removeComment(toDelete.momentId, toDelete.commentId);
+        }
+      } catch (error) {
+        console.error(error);
+        message.error("删除失败");
+      } finally {
+        setToDelete(null);
+      }
+    },
+    [message, toDelete],
+  );
+  useEffect(() => {
+    getMomentList().then((res) => {
+      const comments = res.data.list.map((m) => ({
+        ...m,
+        comments: [],
+        likes: [],
+      }));
+      setMoments(comments);
+    });
+  }, []);
 
   return (
     <div className="mx-auto max-w-205 space-y-5">
@@ -203,15 +261,14 @@ export default function Moments() {
                   <img
                     src={src}
                     alt={`待发布配图 ${i + 1}`}
-                  className="h-full w-full object-cover"
-                />
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() =>
                       setPics((prev) => prev.filter((_, idx) => idx !== i))
                     }
-                    aria-label={`移除第 ${i + 1} 张图片`
-                }
+                    aria-label={`移除第 ${i + 1} 张图片`}
                     className="absolute top-1 right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <X size={12} />
@@ -246,13 +303,15 @@ export default function Moments() {
               }}
             />
 
-            <TextInput
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-              placeholder="所在位置（可选）"
-              aria-label="所在位置"
-              prefix={<MapPin size={13} className="text-ash" />}
-              className="w-44"
+            <Select
+              allowClear
+              value={category}
+              onChange={(v) => setCategory(v)}
+              placeholder="选择分类（可选）"
+              options={CATEGORY_OPTIONS}
+              suffixIcon={<Tags size={13} className="text-ash" />}
+              style={{ width: 150 }}
+              aria-label="动态分类"
             />
 
             <div className="ml-auto flex items-center gap-2">
@@ -308,15 +367,7 @@ export default function Moments() {
         }
         confirmText="删除"
         onCancel={() => setToDelete(null)}
-        onConfirm={() => {
-          if (!toDelete) return;
-          if (toDelete.kind === "moment") {
-            setMoments((prev) => prev.filter((m) => m.id !== toDelete.momentId));
-          } else if (toDelete.commentId) {
-            removeComment(toDelete.momentId, toDelete.commentId);
-          }
-          setToDelete(null);
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

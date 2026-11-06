@@ -1,11 +1,12 @@
 import { Image } from "antd";
-import { Heart, MapPin, MessageCircle, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Tag as TagIcon, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Moment } from "../types";
 import { gradientSrc } from "../utils/art";
 import { formatCount, timeAgo } from "../utils/format";
 import { MomentComments } from "./MomentComments";
 import { Card, IconButton } from "./ui";
+import type { MomentVO } from "@/types/vo";
 
 /* 图片统一铺满父容器（antd Image 外层是 .ant-image） */
 const TILE_CLASS_NAMES = { root: "photo-tile", image: "photo-tile-img" };
@@ -28,14 +29,14 @@ function gridClass(n: number) {
   return "grid grid-cols-3 gap-1.5 max-w-[420px]";
 }
 
-function MomentImages({ moment }: { moment: Moment }) {
-  const images = moment.images;
+function MomentImages({ moment }: { moment: MomentVO }) {
+  const images = moment.photos;
   if (images.length === 0) return null;
 
   return (
     <Image.PreviewGroup>
       <div className={gridClass(images.length)}>
-        {images.map((src, i) => (
+        {images.map((p, i) => (
           <div
             key={`${moment.id}-img-${i}`}
             className={
@@ -45,7 +46,7 @@ function MomentImages({ moment }: { moment: Moment }) {
             }
           >
             <Image
-              src={src}
+              src={p.fullUrl}
               alt={`${moment.content.slice(0, 12)} 配图 ${i + 1}`}
               loading="lazy"
               decoding="async"
@@ -75,13 +76,13 @@ export function MomentCard({
   onDeleteMoment,
   onDeleteComment,
 }: {
-  moment: Moment;
+  moment: MomentVO;
   me: string;
   index?: number;
-  onToggleLike: (momentId: string) => void;
-  onAddComment: (momentId: string, content: string, parentId?: string) => void;
-  onDeleteMoment: (momentId: string) => void;
-  onDeleteComment: (momentId: string, commentId: string) => void;
+  onToggleLike: (momentId: number) => void;
+  onAddComment: (momentId: number, content: string, parentId?: string) => void;
+  onDeleteMoment: (momentId: number) => void;
+  onDeleteComment: (momentId: number, commentId: number) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -113,16 +114,18 @@ export function MomentCard({
             {moment.content}
           </p>
 
-          {moment.content && moment.images.length > 0 && <div className="h-2" />}
+          {moment.content && moment.photos.length > 0 && (
+            <div className="h-2" />
+          )}
           <MomentImages moment={moment} />
 
           {/* 元信息行 */}
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ash">
             <span className="tnum">{timeAgo(moment.createdAt)}</span>
 
-            {moment.location && (
-              <span className="inline-flex items-center gap-1 text-[#409eff]">
-                <MapPin size={12} /> {moment.location}
+            {moment.category && (
+              <span className="inline-flex items-center gap-1 rounded border border-[#409eff]/25 bg-[#409eff]/10 px-1.5 py-0.5 text-[11px] leading-none text-[#409eff]">
+                <TagIcon size={11} /> {moment.category}
               </span>
             )}
 
@@ -146,7 +149,9 @@ export function MomentCard({
                 }`}
               >
                 <Heart size={14} fill={liked ? "currentColor" : "none"} />
-                <span className="tnum">{likeCount > 0 ? formatCount(likeCount) : "赞"}</span>
+                <span className="tnum">
+                  {likeCount > 0 ? formatCount(likeCount) : "赞"}
+                </span>
               </button>
 
               {/* 评论 */}
@@ -173,7 +178,9 @@ export function MomentCard({
             me={me}
             open={open}
             onClose={() => setOpen(false)}
-            onAdd={(content, parentId) => onAddComment(moment.id, content, parentId)}
+            onAdd={(content, parentId) =>
+              onAddComment(moment.id, content, parentId)
+            }
             onDelete={(commentId) => onDeleteComment(moment.id, commentId)}
           />
         </div>

@@ -27,12 +27,21 @@ export interface CreateTagDTO {
   hue: string;
 }
 
+// 创建相册
 export interface CreateAlbumDTO {
   name: string;
   desc: string;
 }
 
+// 创建照片
 export interface CreatePhotoDTO {
   file: File;
   albumId: number;
+}
+
+// 创建动态
+export interface CreateMommentDTO {
+  content: string;
+  urls: string[];
+  category: string | null;
 }

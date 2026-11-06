@@ -67,3 +67,33 @@ export interface PhotoVO {
   createdAt: string;
   updatedAt: string;
 }
+export interface MomentPhotoVO {
+  id: number;
+  momentId: number;
+  fullUrl: string;
+  thumbUrl: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MommentPhotoVO {
+  id: number;
+  momentId: number;
+  fullUrl: string;
+  thumbUrl: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MomentVO {
+  id: number;
+  content: string;
+  photos: MommentPhotoVO[];
+  comments: any[];
+  likes: any[];
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
